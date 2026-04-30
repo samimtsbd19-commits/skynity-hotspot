@@ -30,4 +30,32 @@ export default async function settingsRoutes(app: FastifyInstance) {
       });
     return { data: { message: "Setting saved" } };
   });
+
+  app.post("/payments", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin")] }, async (request) => {
+    const body = request.body as { method: string; accountNumber: string; accountType?: string; isActive?: boolean };
+    await db
+      .insert(paymentConfigs)
+      .values({
+        orgId: request.user!.orgId,
+        method: body.method,
+        accountNumber: body.accountNumber,
+        accountType: body.accountType || null,
+        isActive: body.isActive ?? true,
+      })
+      .onConflictDoUpdate({
+        target: [paymentConfigs.orgId, paymentConfigs.method],
+        set: {
+          accountNumber: body.accountNumber,
+          accountType: body.accountType || null,
+          isActive: body.isActive ?? true,
+        },
+      });
+    return { data: { message: "Payment config saved" } };
+  });
+
+  app.delete("/payments/:id", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin")] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    await db.delete(paymentConfigs).where(eq(paymentConfigs.id, Number(id)));
+    return { data: { message: "Payment config deleted" } };
+  });
 }

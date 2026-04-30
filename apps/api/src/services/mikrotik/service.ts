@@ -47,7 +47,7 @@ export const mikrotikService = {
     const client = getRealClient();
     if (!client) return mockMikrotikService.getSystemResource();
     try {
-      const res = await client.get("/system/resource");
+      const res = await client.get("/system/resource") as Record<string, unknown>;
       return {
         cpuLoad: safeNumber(res["cpu-load"]),
         freeMemoryMB: Math.round(safeNumber(res["free-memory"]) / 1024 / 1024),
@@ -96,7 +96,7 @@ export const mikrotikService = {
     const client = getRealClient();
     if (!client) return mockMikrotikService.getDeviceInfo();
     try {
-      const res = await client.get("/system/routerboard");
+      const res = await client.get("/system/routerboard") as Record<string, unknown>;
       return {
         identity: String(res.identity || ""),
         model: String(res.model || ""),
@@ -165,8 +165,8 @@ export const mikrotikService = {
     try {
       const { promise: pingPromise } = await import("ping");
       const res = await pingPromise.probe(host, { min_reply: count });
-      const avgMs = res.avg ? parseFloat(res.avg) : 0;
-      const loss = res.packetLoss ? parseFloat(res.packetLoss) : 0;
+      const avgMs = res.avg ? parseFloat(String(res.avg)) : 0;
+      const loss = res.packetLoss ? parseFloat(String(res.packetLoss)) : 0;
       const status: PingResult["status"] =
         loss > 10 ? "unreachable" : avgMs > 200 ? "poor" : avgMs > 100 ? "fair" : avgMs > 50 ? "good" : "excellent";
       return {
@@ -224,7 +224,7 @@ export const mikrotikService = {
       const data = Array.isArray(res) ? res : [res];
       return data.map((s: any) => ({
         name: String(s.name || ""),
-        status: String(s.status || ""),
+        status: (String(s.status || "") as SfpModule["status"]) || "not-present",
         txPowerDbm: safeNumber(s["sfp-tx-power"]),
         rxPowerDbm: safeNumber(s["sfp-rx-power"]),
         temperatureC: safeNumber(s["sfp-temperature"]),
@@ -236,8 +236,8 @@ export const mikrotikService = {
         serialNumber: String(s["sfp-vendor-serial"] || ""),
         type: String(s["sfp-type"] || ""),
         isHealthy: s.status === "active" || s.status === "link-ok",
-        txPowerStatus: safeNumber(s["sfp-tx-power"]) > -10 ? "ok" : "warning",
-        rxPowerStatus: safeNumber(s["sfp-rx-power"]) > -15 ? "ok" : "warning",
+        txPowerStatus: safeNumber(s["sfp-tx-power"]) > -10 ? "ok" : "low",
+        rxPowerStatus: safeNumber(s["sfp-rx-power"]) > -15 ? "ok" : "low",
       }));
     } catch {
       return mockMikrotikService.getSfpModules();
@@ -260,7 +260,7 @@ export const mikrotikService = {
         version: String(n.version || ""),
         uptime: String(n.uptime || ""),
         age: String(n.age || ""),
-        discoveryProtocol: String(n["discovery-protocol"] || "MNDP"),
+        discoveryProtocol: (String(n["discovery-protocol"] || "MNDP") as Neighbor["discoveryProtocol"]) || "MNDP",
       }));
     } catch {
       return mockMikrotikService.getNeighbors();
