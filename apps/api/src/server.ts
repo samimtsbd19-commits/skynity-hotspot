@@ -1,4 +1,6 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: "../../.env" });
+
 import { buildApp } from "./app";
 import { env } from "./config/env";
 import { startTelegramBot, stopTelegramBot } from "./services/telegram/bot";
