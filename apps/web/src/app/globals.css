@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg-primary: #050B15;
+  --bg-secondary: #0A1628;
+  --bg-card: #0D1E36;
+  --bg-elevated: #112240;
+  --accent-primary: #00EAFF;
+  --accent-green: #00FF88;
+  --accent-orange: #FF8C00;
+  --accent-red: #FF3B6B;
+  --accent-purple: #A855F7;
+  --text-primary: #E2F0FF;
+  --text-secondary: #7AA3C8;
+  --border-glow: rgba(0,234,255,0.15);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-elevated);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 234, 255, 0.3);
+}
+
+.glass-card {
+  background: rgba(13, 30, 54, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+}
+
+.neon-border {
+  border: 1px solid rgba(0, 234, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 234, 255, 0.1), inset 0 0 10px rgba(0, 234, 255, 0.05);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
