@@ -4,11 +4,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import SkynityLogo from "@/components/brand/SkynityLogo";
-import { LogOut, Package, ListOrdered, CreditCard, Home, BarChart3, HelpCircle } from "lucide-react";
+import { LogOut, Package, ListOrdered, Home, BarChart3, HelpCircle, Menu, X, Download } from "lucide-react";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [customer, setCustomer] = useState<{ fullName: string; phone: string } | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstall, setShowInstall] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -19,7 +22,23 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     if (c) {
       try { setCustomer(JSON.parse(c)); } catch { /* ignore */ }
     }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
+
+  async function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    setShowInstall(false);
+  }
 
   function logout() {
     localStorage.removeItem("skynity_portal_token");
@@ -32,20 +51,23 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const navLinks = [
     { href: "/portal", icon: Home, label: "Dashboard" },
     { href: "/portal/packages", icon: Package, label: "Packages" },
-    { href: "/portal/orders", icon: ListOrdered, label: "My Orders" },
+    { href: "/portal/orders", icon: ListOrdered, label: "Orders" },
     { href: "/portal/usage", icon: BarChart3, label: "Usage" },
     { href: "/portal/support", icon: HelpCircle, label: "Support" },
   ];
 
   return (
-    <div className="min-h-screen bg-[#050B15]">
-      <nav className="border-b border-[rgba(0,234,255,0.15)] bg-[#0A1628]/80 backdrop-blur-md">
+    <div className="min-h-screen bg-[#050B15] pb-20 md:pb-0">
+      {/* Top Nav */}
+      <nav className="border-b border-[rgba(0,234,255,0.15)] bg-[#0A1628]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/portal" className="flex items-center gap-2">
             <SkynityLogo size={28} />
             <span className="font-orbitron text-sm font-bold text-gradient">SKYNITY</span>
           </Link>
-          <div className="flex items-center gap-4">
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-4">
             {token && navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -58,6 +80,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 {link.label}
               </Link>
             ))}
+            {showInstall && (
+              <button onClick={installPWA} className="text-xs flex items-center gap-1 text-sky-accent-green hover:text-sky-accent-primary transition-colors">
+                <Download size={12} /> Install App
+              </button>
+            )}
             {token ? (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-sky-text-secondary">{customer?.fullName || customer?.phone}</span>
@@ -71,9 +98,68 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               </Link>
             )}
           </div>
+
+          {/* Mobile Hamburger */}
+          <button className="md:hidden text-sky-text-primary" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[rgba(0,234,255,0.1)] bg-[#0A1628]/95 backdrop-blur-md">
+            <div className="px-4 py-3 space-y-2">
+              {token && navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 py-2 text-sm ${
+                    pathname === link.href ? "text-sky-accent-primary" : "text-sky-text-secondary"
+                  }`}
+                >
+                  <link.icon size={16} />
+                  {link.label}
+                </Link>
+              ))}
+              {showInstall && (
+                <button onClick={() => { installPWA(); setMobileMenuOpen(false); }} className="flex items-center gap-2 py-2 text-sm text-sky-accent-green w-full">
+                  <Download size={16} /> Install App
+                </button>
+              )}
+              {token ? (
+                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="flex items-center gap-2 py-2 text-sm text-sky-accent-red w-full">
+                  <LogOut size={16} /> Logout
+                </button>
+              ) : (
+                <Link href="/portal/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2 text-sm text-sky-accent-primary">
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
+
       <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
+
+      {/* Mobile Bottom Tab Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0A1628]/95 backdrop-blur-md border-t border-[rgba(0,234,255,0.15)] z-50">
+        <div className="flex justify-around py-2">
+          {navLinks.slice(0, 5).map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] ${
+                pathname === link.href ? "text-sky-accent-primary" : "text-sky-text-secondary"
+              }`}
+            >
+              <link.icon size={18} />
+              <span>{link.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

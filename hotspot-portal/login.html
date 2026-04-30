@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SKYNITY WiFi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SKYNITY WiFi — Starlink Internet</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#050B15">
 </head>
 <body>
-  <div class="starfield">
-    <canvas id="stars"></canvas>
-  </div>
+  <div class="starfield"><canvas id="stars"></canvas></div>
 
   <div class="container">
+    <!-- Header -->
     <header class="portal-header">
       <div class="logo-wrap">
-        <svg width="64" height="64" viewBox="0 0 100 100" fill="none">
+        <svg width="56" height="56" viewBox="0 0 100 100" fill="none">
           <defs>
             <linearGradient id="g" x1="0" y1="0" x2="100" y2="100">
               <stop offset="0%" stop-color="#00EAFF"/>
@@ -27,10 +28,17 @@
         </svg>
         <div>
           <h1>SKYNITY</h1>
-          <p>Connecting the Future</p>
+          <p>Starlink Internet Provider</p>
         </div>
       </div>
     </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">🚀 Starlink Powered</div>
+      <h2>Ultra-Fast Internet for Your Home</h2>
+      <p>24/7 connectivity with backup power. Even when electricity goes off, your internet stays on!</p>
+    </section>
 
     <div class="panels">
       <!-- Left: Login + Free Trial -->
@@ -60,22 +68,22 @@
           </div>
         </div>
 
-        <!-- Free Trial Signup -->
+        <!-- Free Trial -->
         <div class="trial-panel glass" id="trial">
-          <div class="trial-badge">🎉 FREE 7-DAY TRIAL</div>
-          <h2>Get Started Free</h2>
-          <p class="trial-desc">New users get 7 days free. No payment required!</p>
+          <div class="trial-badge">🎉 7 DAYS FREE TRIAL</div>
+          <h2>New User? Try FREE!</h2>
+          <p class="trial-desc">Sign up with your phone number and get 7 days of free internet. No payment needed!</p>
           <form id="trial-form">
             <div class="input-group">
               <label>Full Name</label>
-              <input type="text" id="trial-name" placeholder="Your name" required>
+              <input type="text" id="trial-name" placeholder="Your full name" required>
             </div>
             <div class="input-group">
               <label>Phone Number</label>
               <input type="tel" id="trial-phone" placeholder="01XXXXXXXXX" pattern="01[3-9][0-9]{8}" required>
             </div>
             <div class="input-group">
-              <label>Password</label>
+              <label>Set Password</label>
               <input type="password" id="trial-password" placeholder="Min 6 characters" minlength="6" required>
             </div>
             <button type="submit" class="btn-trial" id="trial-btn">
@@ -87,48 +95,115 @@
         </div>
       </div>
 
-      <!-- Right: Dynamic Packages -->
+      <!-- Right: Packages -->
       <div class="packages-panel">
         <h2>Our Packages</h2>
         <div id="package-loader" class="loading">Loading packages...</div>
         <div class="package-cards" id="package-cards" style="display:none;"></div>
+
+        <!-- Company Info -->
+        <div class="info-section glass">
+          <h3>Why SKYNITY?</h3>
+          <ul class="info-list">
+            <li><span class="info-icon">🛰️</span> <strong>Starlink Internet</strong> — Satellite powered, high-speed connectivity</li>
+            <li><span class="info-icon">🔋</span> <strong>24/7 Power Backup</strong> — Internet stays ON even without electricity</li>
+            <li><span class="info-icon">⚡</span> <strong>IPS Backup</strong> — Dual ISP redundancy for maximum uptime</li>
+            <li><span class="info-icon">🌧️</span> <strong>Rain Alert</strong> — During heavy rain, speed may drop slightly</li>
+          </ul>
+        </div>
+
+        <!-- User Guide -->
+        <div class="info-section glass">
+          <h3>How to Buy a Package?</h3>
+          <ol class="guide-list">
+            <li><strong>Choose</strong> a package from the list above</li>
+            <li><strong>Click</strong> "Get Started" and register with your phone number</li>
+            <li><strong>Pay</strong> via bKash or Nagad and submit the TRX ID</li>
+            <li><strong>Wait</strong> 5-10 minutes for admin approval</li>
+            <li><strong>Connect</strong> using your phone number as username!</li>
+          </ol>
+        </div>
+
+        <!-- Rules -->
+        <div class="info-section glass rules">
+          <h3>📋 User Rules</h3>
+          <ul class="rules-list">
+            <li>✅ Maximum <strong>2 devices</strong> per account</li>
+            <li>❌ Do <strong>NOT</strong> share your username/password with others</li>
+            <li>❌ Do <strong>NOT</strong> try to login on more than your allowed devices</li>
+            <li>⚠️ Any abuse will result in <strong>immediate account suspension</strong></li>
+            <li>💬 For support, call <strong>01712-345-678</strong> or visit <a href="https://user.skynity.org">user.skynity.org</a></li>
+          </ul>
+        </div>
       </div>
     </div>
 
     <footer class="portal-footer">
-      <p>Payment Methods</p>
-      <div class="payment-icons">
-        <span class="payment-badge">bKash</span>
-        <span class="payment-badge">Nagad</span>
-        <span class="payment-badge">Rocket</span>
-      </div>
-      <p class="copyright">&copy; SKYNITY ISP. All rights reserved.</p>
+      <p>Payment: <span class="payment-badge">bKash</span> <span class="payment-badge">Nagad</span> <span class="payment-badge">Rocket</span></p>
+      <p class="copyright">&copy; 2024 SKYNITY ISP. Starlink Internet Provider.</p>
     </footer>
+  </div>
+
+  <!-- Order Modal -->
+  <div id="order-modal" class="modal" style="display:none;">
+    <div class="modal-content glass">
+      <h3 id="order-title">Order Package</h3>
+      <p class="modal-sub" id="order-desc">Fill in your details</p>
+      <form id="order-form">
+        <input type="hidden" id="order-package-id">
+        <div class="input-group">
+          <label>Full Name</label>
+          <input type="text" id="order-name" placeholder="Your name" required>
+        </div>
+        <div class="input-group">
+          <label>Phone Number</label>
+          <input type="tel" id="order-phone" placeholder="01XXXXXXXXX" pattern="01[3-9][0-9]{8}" required>
+        </div>
+        <div class="input-group">
+          <label>Set Password</label>
+          <input type="password" id="order-password" placeholder="Min 6 characters" minlength="6" required>
+        </div>
+        <div class="input-group">
+          <label>Payment Method</label>
+          <select id="order-payment" class="form-select">
+            <option value="bkash">bKash</option>
+            <option value="nagad">Nagad</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>TRX ID</label>
+          <input type="text" id="order-trx" placeholder="Transaction ID" required>
+        </div>
+        <div class="input-group">
+          <label>Payment From (bKash/Nagad Number)</label>
+          <input type="tel" id="order-from" placeholder="01XXXXXXXXX" pattern="01[3-9][0-9]{8}" required>
+        </div>
+        <button type="submit" class="btn-primary" id="order-btn">
+          <span class="btn-text">Submit Order</span>
+          <span class="btn-spinner" style="display:none;"></span>
+        </button>
+      </form>
+      <button class="btn-outline mt-2" onclick="closeOrderModal()">Cancel</button>
+    </div>
   </div>
 
   <!-- Success Modal -->
   <div id="success-modal" class="modal" style="display:none;">
     <div class="modal-content glass">
       <div class="modal-icon">✅</div>
-      <h3>Free Trial Activated!</h3>
-      <p class="modal-sub">Your account is ready. Use these credentials to connect:</p>
-      <div class="cred-box">
-        <div class="cred-row">
-          <span>Username</span>
-          <code id="cred-username">-</code>
-        </div>
-        <div class="cred-row">
-          <span>Password</span>
-          <code id="cred-password">-</code>
-        </div>
+      <h3 id="success-title">Success!</h3>
+      <p class="modal-sub" id="success-msg">Your request has been submitted.</p>
+      <div class="cred-box" id="success-creds" style="display:none;">
+        <div class="cred-row"><span>Username</span><code id="cred-username">-</code></div>
+        <div class="cred-row"><span>Password</span><code id="cred-password">-</code></div>
       </div>
-      <p class="modal-hint">You can also login at <a href="https://user.skynity.org">user.skynity.org</a></p>
-      <button class="btn-primary" onclick="closeModal()">Done</button>
+      <p class="modal-hint">Login at <a href="https://user.skynity.org">user.skynity.org</a> to track your order</p>
+      <button class="btn-primary" onclick="closeSuccessModal()">Done</button>
     </div>
   </div>
 
   <script>
-    // Starfield animation
+    // Starfield
     const canvas = document.getElementById('stars');
     const ctx = canvas.getContext('2d');
     let w, h, stars = [];
@@ -138,66 +213,67 @@
     init(); animate();
     window.addEventListener('resize', () => { resize(); init(); });
 
-    // Default template config fallback
     const defaultTemplate = {
-      primaryColor: "#00EAFF",
-      secondaryColor: "#00FF88",
-      accentColor: "#A855F7",
-      cardStyle: "glass",
-      badgeStyle: "pill",
-      fontFamily: "orbitron"
+      primaryColor: "#00EAFF", secondaryColor: "#00FF88", accentColor: "#A855F7",
+      cardStyle: "glass", badgeStyle: "pill", fontFamily: "orbitron"
     };
+    function normalizeTemplate(t) { return { ...defaultTemplate, ...(t || {}) }; }
 
-    function normalizeTemplate(t) {
-      return { ...defaultTemplate, ...(t || {}) };
-    }
-
-    // Fetch and render packages
+    // Load packages
     async function loadPackages() {
       try {
         const res = await fetch('https://api.skynity.org/portal-api/packages');
         const json = await res.json();
-        const list = json.data || [];
+        const list = (json.data || []).filter(p => !p.isTrial);
+        const trial = (json.data || []).find(p => p.isTrial);
         const loader = document.getElementById('package-loader');
         const container = document.getElementById('package-cards');
-
-        if (!list.length) {
-          loader.textContent = 'No packages available.';
-          return;
-        }
-
         loader.style.display = 'none';
         container.style.display = 'grid';
 
-        container.innerHTML = list.map(pkg => {
-          const t = normalizeTemplate(pkg.templateConfig);
-          const isTrial = pkg.isTrial;
-          const cardClass = t.cardStyle === 'glass' ? 'glass' : t.cardStyle === 'solid' ? 'solid-card' : 'outline-card';
-          const btnClass = t.badgeStyle === 'pill' ? 'pill' : t.badgeStyle === 'square' ? 'square' : 'rounded';
-          const fontFamily = t.fontFamily === 'orbitron' ? "font-family:'Orbitron',sans-serif" : "font-family:'Inter',sans-serif";
+        let html = '';
 
-          return `
-            <div class="package-card ${cardClass} ${isTrial ? 'trial-highlight' : ''}" style="${fontFamily}">
-              ${isTrial ? '<div class="trial-glow-badge">FREE TRIAL</div>' : ''}
-              <span class="type-badge" style="background:${t.primaryColor}22;color:${t.primaryColor}">${pkg.type.toUpperCase()}</span>
-              <div class="speed" style="color:${t.primaryColor}">${pkg.downloadMbps} Mbps</div>
-              <div class="price" style="color:${t.primaryColor}">৳${pkg.priceBdt}</div>
-              <div class="duration" style="color:${t.secondaryColor}">${pkg.validityDays} Days</div>
-              <ul class="features">
-                <li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> ${pkg.uploadMbps} Mbps Upload</li>
-                <li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> Unlimited Data</li>
-                ${pkg.burstDownloadMbps ? `<li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> Burst ${pkg.burstDownloadMbps} Mbps</li>` : ''}
-              </ul>
-              <a href="https://user.skynity.org/portal/login" class="get-started ${btnClass}" style="background:${t.primaryColor};color:#050B15">
-                ${isTrial ? 'Claim Free' : 'Get Started'}
-              </a>
-            </div>
-          `;
-        }).join('');
+        // Trial card first
+        if (trial) {
+          html += renderPackageCard(trial, true);
+        }
+
+        // Other packages
+        list.forEach(pkg => {
+          html += renderPackageCard(pkg, false);
+        });
+
+        container.innerHTML = html;
       } catch (e) {
         document.getElementById('package-loader').textContent = 'Unable to load packages.';
-        console.error(e);
       }
+    }
+
+    function renderPackageCard(pkg, isTrial) {
+      const t = normalizeTemplate(pkg.templateConfig);
+      const cardClass = t.cardStyle === 'glass' ? 'glass' : t.cardStyle === 'solid' ? 'solid-card' : 'outline-card';
+      const btnClass = t.badgeStyle === 'pill' ? 'pill' : t.badgeStyle === 'square' ? 'square' : 'rounded';
+      const fontFamily = t.fontFamily === 'orbitron' ? "font-family:'Orbitron',sans-serif" : "font-family:'Inter',sans-serif";
+      const deviceInfo = pkg.description ? pkg.description.match(/(\d+)\s*device/i) : null;
+      const devices = deviceInfo ? deviceInfo[1] : '1';
+
+      return `
+        <div class="package-card ${cardClass} ${isTrial ? 'trial-highlight' : ''}" style="${fontFamily}">
+          ${isTrial ? '<div class="trial-glow-badge">7 DAY FREE</div>' : ''}
+          <span class="type-badge" style="background:${t.primaryColor}22;color:${t.primaryColor}">${pkg.type.toUpperCase()}</span>
+          <div class="speed" style="color:${t.primaryColor}">${pkg.downloadMbps} Mbps</div>
+          <div class="device-tag">${devices} Device${devices !== '1' ? 's' : ''}</div>
+          <div class="price" style="color:${t.primaryColor}">৳${pkg.priceBdt}</div>
+          <div class="duration" style="color:${t.secondaryColor}">${pkg.validityDays} Days</div>
+          <ul class="features">
+            <li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> ${pkg.uploadMbps} Mbps Upload</li>
+            <li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> Unlimited Data</li>
+          </ul>
+          <button onclick="openOrderModal('${pkg.id}', '${pkg.name}', '${pkg.priceBdt}')" class="get-started ${btnClass}" style="background:${t.primaryColor};color:#050B15">
+            ${isTrial ? 'Claim Free' : 'Get Started'}
+          </button>
+        </div>
+      `;
     }
     loadPackages();
 
@@ -212,53 +288,104 @@
       const phone = document.getElementById('trial-phone').value.trim();
       const password = document.getElementById('trial-password').value;
 
-      if (!/^01[3-9]\d{8}$/.test(phone)) {
-        alert('Please enter a valid Bangladesh phone number (01XXXXXXXXX)');
-        return;
-      }
+      if (!/^01[3-9]\d{8}$/.test(phone)) { alert('Valid BD number required: 01XXXXXXXXX'); return; }
 
-      btn.disabled = true;
-      btnText.style.display = 'none';
-      spinner.style.display = 'inline-block';
-
+      btn.disabled = true; btnText.style.display = 'none'; spinner.style.display = 'inline-block';
       try {
         const res = await fetch('https://api.skynity.org/portal-auth/free-trial', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fullName: name, phone, password })
         });
         const json = await res.json();
-
-        if (!res.ok) {
-          alert(json.error?.message || 'Something went wrong. Please try again.');
-          return;
-        }
-
-        const data = json.data;
-        document.getElementById('cred-username').textContent = data.subscription.username;
-        document.getElementById('cred-password').textContent = data.subscription.password;
-        document.getElementById('success-modal').style.display = 'flex';
-
-        // Clear form
+        if (!res.ok) { alert(json.error?.message || 'Failed. Try again.'); return; }
+        showSuccess('Free Trial Activated!', json.data.subscription?.username, json.data.subscription?.password, 'Your 7-day free trial is active!');
         document.getElementById('trial-form').reset();
-      } catch (err) {
-        alert('Network error. Please try again.');
-        console.error(err);
-      } finally {
-        btn.disabled = false;
-        btnText.style.display = 'inline';
-        spinner.style.display = 'none';
-      }
+      } catch { alert('Network error.'); }
+      finally { btn.disabled = false; btnText.style.display = 'inline'; spinner.style.display = 'none'; }
     });
 
-    function closeModal() {
-      document.getElementById('success-modal').style.display = 'none';
+    // Order modal
+    function openOrderModal(pkgId, pkgName, price) {
+      document.getElementById('order-package-id').value = pkgId;
+      document.getElementById('order-title').textContent = 'Order: ' + pkgName;
+      document.getElementById('order-desc').textContent = 'Price: ৳' + price;
+      document.getElementById('order-modal').style.display = 'flex';
+    }
+    function closeOrderModal() {
+      document.getElementById('order-modal').style.display = 'none';
     }
 
-    // Close modal on outside click
-    document.getElementById('success-modal').addEventListener('click', (e) => {
-      if (e.target.id === 'success-modal') closeModal();
+    // Order form
+    document.getElementById('order-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('order-btn');
+      const btnText = btn.querySelector('.btn-text');
+      const spinner = btn.querySelector('.btn-spinner');
+
+      const name = document.getElementById('order-name').value.trim();
+      const phone = document.getElementById('order-phone').value.trim();
+      const password = document.getElementById('order-password').value;
+      const packageId = document.getElementById('order-package-id').value;
+      const paymentMethod = document.getElementById('order-payment').value;
+      const trxId = document.getElementById('order-trx').value.trim();
+      const paymentFrom = document.getElementById('order-from').value.trim();
+
+      if (!/^01[3-9]\d{8}$/.test(phone)) { alert('Valid BD number required'); return; }
+
+      btn.disabled = true; btnText.style.display = 'none'; spinner.style.display = 'inline-block';
+      try {
+        // First register
+        const regRes = await fetch('https://api.skynity.org/portal-auth/register', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName: name, phone, password })
+        });
+        let token;
+        if (regRes.ok) {
+          const regJson = await regRes.json();
+          token = regJson.data?.accessToken;
+        } else {
+          // Try login
+          const loginRes = await fetch('https://api.skynity.org/portal-auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, password })
+          });
+          if (!loginRes.ok) { alert('Account issue. Please try free trial or contact support.'); return; }
+          const loginJson = await loginRes.json();
+          token = loginJson.data?.accessToken;
+        }
+
+        // Create order
+        const orderRes = await fetch('https://api.skynity.org/portal-api/orders', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ packageId, paymentMethod, trxId, paymentFrom, amountBdt: document.getElementById('order-desc').textContent.replace(/[^0-9]/g, '') })
+        });
+        const orderJson = await orderRes.json();
+        if (!orderRes.ok) { alert(orderJson.error?.message || 'Order failed'); return; }
+
+        closeOrderModal();
+        showSuccess('Order Submitted!', null, null, 'Please wait for admin approval. Check user.skynity.org for updates.');
+        document.getElementById('order-form').reset();
+      } catch { alert('Network error.'); }
+      finally { btn.disabled = false; btnText.style.display = 'inline'; spinner.style.display = 'none'; }
     });
+
+    function showSuccess(title, username, password, msg) {
+      document.getElementById('success-title').textContent = title;
+      document.getElementById('success-msg').textContent = msg;
+      const creds = document.getElementById('success-creds');
+      if (username && password) {
+        creds.style.display = 'block';
+        document.getElementById('cred-username').textContent = username;
+        document.getElementById('cred-password').textContent = password;
+      } else {
+        creds.style.display = 'none';
+      }
+      document.getElementById('success-modal').style.display = 'flex';
+    }
+    function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
+
+    document.getElementById('order-modal').addEventListener('click', (e) => { if (e.target.id === 'order-modal') closeOrderModal(); });
+    document.getElementById('success-modal').addEventListener('click', (e) => { if (e.target.id === 'success-modal') closeSuccessModal(); });
   </script>
 </body>
 </html>

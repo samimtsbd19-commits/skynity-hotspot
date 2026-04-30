@@ -1,18 +1,12 @@
 import { FastifyInstance } from "fastify";
-import { mockMikrotikService } from "../services/mikrotik/client";
-import { env } from "../config/env";
+import { mikrotikService } from "../services/mikrotik/service";
 
 export function startBandwidthSocketEmitter(app: FastifyInstance) {
   const io = app.io;
 
   setInterval(async () => {
     try {
-      let interfaces;
-      if (env.MIKROTIK_MOCK === "true") {
-        interfaces = mockMikrotikService.getInterfaceList();
-      } else {
-        interfaces = mockMikrotikService.getInterfaceList();
-      }
+      const interfaces = await mikrotikService.getInterfaceList();
 
       const payload = interfaces.map((iface) => ({
         name: iface.name,

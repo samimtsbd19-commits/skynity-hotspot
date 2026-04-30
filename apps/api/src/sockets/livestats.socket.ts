@@ -1,17 +1,13 @@
 import { FastifyInstance } from "fastify";
-import { mockMikrotikService } from "../services/mikrotik/client";
-import { env } from "../config/env";
+import { mikrotikService } from "../services/mikrotik/service";
 
 export function startLiveStatsSocketEmitter(app: FastifyInstance) {
   const io = app.io;
 
-  setInterval(() => {
+  setInterval(async () => {
     try {
-      if (env.MIKROTIK_MOCK === "true") {
-        mockMikrotikService.tickLiveSpeeds();
-      }
-
-      const stats = mockMikrotikService.getLiveStats();
+      mikrotikService.tickLiveSpeeds();
+      const stats = await mikrotikService.getLiveStats();
 
       io.to("livestats").emit("livestats-update", stats);
       io.to("dashboard").emit("livestats-update", stats);

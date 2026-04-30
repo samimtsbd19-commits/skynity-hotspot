@@ -1,18 +1,12 @@
 import { FastifyInstance } from "fastify";
-import { mockMikrotikService } from "../services/mikrotik/client";
-import { env } from "../config/env";
+import { mikrotikService } from "../services/mikrotik/service";
 
 export function startResourceSocketEmitter(app: FastifyInstance) {
   const io = app.io;
 
   setInterval(async () => {
     try {
-      let resource;
-      if (env.MIKROTIK_MOCK === "true") {
-        resource = mockMikrotikService.getSystemResource();
-      } else {
-        resource = mockMikrotikService.getSystemResource();
-      }
+      const resource = await mikrotikService.getSystemResource();
 
       io.to("resource").emit("resource-update", {
         ...resource,

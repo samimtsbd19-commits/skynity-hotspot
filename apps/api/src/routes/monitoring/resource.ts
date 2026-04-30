@@ -1,19 +1,14 @@
 import { FastifyInstance } from "fastify";
-import { env } from "../../config/env";
-import { mockMikrotikService } from "../../services/mikrotik/client";
+import { mikrotikService } from "../../services/mikrotik/service";
 
 export default async function resourceRoutes(app: FastifyInstance) {
   app.get("/", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getSystemResource() };
-    }
-    return { data: mockMikrotikService.getSystemResource() };
+    const data = await mikrotikService.getSystemResource();
+    return { data };
   });
 
   app.get("/health", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getSystemHealth() };
-    }
-    return { data: mockMikrotikService.getSystemHealth() };
+    const data = await mikrotikService.getSystemHealth();
+    return { data };
   });
 }

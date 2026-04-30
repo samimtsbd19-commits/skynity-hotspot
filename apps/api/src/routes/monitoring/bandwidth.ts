@@ -1,20 +1,15 @@
 import { FastifyInstance } from "fastify";
-import { env } from "../../config/env";
-import { mockMikrotikService } from "../../services/mikrotik/client";
+import { mikrotikService } from "../../services/mikrotik/service";
 
 export default async function bandwidthRoutes(app: FastifyInstance) {
   app.get("/interfaces", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getInterfaceList() };
-    }
-    return { data: mockMikrotikService.getInterfaceList() };
+    const data = await mikrotikService.getInterfaceList();
+    return { data };
   });
 
   app.get("/traffic/:iface", { preHandler: [app.authenticate] }, async (request) => {
     const { iface } = request.params as { iface: string };
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getInterfaceTraffic(iface) };
-    }
-    return { data: mockMikrotikService.getInterfaceTraffic(iface) };
+    const data = await mikrotikService.getInterfaceTraffic(iface);
+    return { data };
   });
 }
