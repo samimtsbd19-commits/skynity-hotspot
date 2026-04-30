@@ -16,9 +16,78 @@ export interface ProvisioningResult {
   message: string;
 }
 
+export async function provisionCustomer(
+  customerId: string,
+  packageId: string,
+  opts?: { skipMikrotik?: boolean }
+): Promise<ProvisioningResult> {
+  try {
+    const customerRows = await db.select().from(customers).where(eq(customers.id, customerId)).limit(1);
+    if (customerRows.length === 0) {
+      return { success: false, message: "Customer not found" };
+    }
+    const customer = customerRows[0];
+
+    const pkgRows = await db.select().from(packages).where(eq(packages.id, packageId)).limit(1);
+    if (pkgRows.length === 0) {
+      return { success: false, message: "Package not found" };
+    }
+    const pkg = pkgRows[0];
+
+    const username = customer.phone.replace(/^\+?88/, "");
+    const password = customer.phone.slice(-6) + "SKY";
+
+    const startedAt = new Date();
+    const expiresAt = new Date();
+    expiresAt.setDate(startedAt.getDate() + (pkg.validityDays || 30));
+
+    const subResult = await db.insert(subscriptions).values({
+      customerId: customer.id,
+      packageId: pkg.id,
+      username,
+      passwordEncrypted: password,
+      status: "active",
+      startedAt,
+      expiresAt,
+      autoRenew: false,
+    }).returning();
+
+    const subscription = subResult[0];
+
+    if (!opts?.skipMikrotik) {
+      if (pkg.type === "pppoe") {
+        mockMikrotikService.createPppoeUser({
+          username,
+          password,
+          profile: pkg.mikrotikProfileName || "default",
+          service: "pppoe",
+          comment: `${customer.fullName} | ${customer.phone}`,
+        });
+      } else if (pkg.type === "hotspot") {
+        mockMikrotikService.createHotspotUser({
+          name: username,
+          password,
+          profile: pkg.mikrotikProfileName || "default",
+          comment: `${customer.fullName} | ${customer.phone}`,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      subscriptionId: subscription.id,
+      username,
+      password,
+      message: `Successfully provisioned ${pkg.type} user: ${username}`,
+    };
+  } catch (err) {
+    console.error("Provisioning error:", err);
+    return { success: false, message: err instanceof Error ? err.message : "Provisioning failed" };
+  }
+}
+
 export async function provisionOrder(orderId: string): Promise<ProvisioningResult> {
   try {
-    // Get order details
     const orderRows = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
     if (orderRows.length === 0) {
       return { success: false, message: "Order not found" };
@@ -33,71 +102,12 @@ export async function provisionOrder(orderId: string): Promise<ProvisioningResul
       return { success: false, message: "Order already provisioned" };
     }
 
-    // Get customer
-    const customerRows = await db.select().from(customers).where(eq(customers.id, order.customerId)).limit(1);
-    if (customerRows.length === 0) {
-      return { success: false, message: "Customer not found" };
-    }
-    const customer = customerRows[0];
+    const result = await provisionCustomer(order.customerId, order.packageId);
+    if (!result.success) return result;
 
-    // Get package
-    const pkgRows = await db.select().from(packages).where(eq(packages.id, order.packageId)).limit(1);
-    if (pkgRows.length === 0) {
-      return { success: false, message: "Package not found" };
-    }
-    const pkg = pkgRows[0];
+    await db.update(orders).set({ subscriptionId: result.subscriptionId }).where(eq(orders.id, orderId));
 
-    // Generate credentials: phone = username, last 6 digits of phone = password (or random)
-    const username = customer.phone.replace(/^\+?88/, ""); // Remove +88 or 88 prefix
-    const password = customer.phone.slice(-6) + "SKY"; // Last 6 digits + SKY
-
-    // Calculate expiry
-    const startedAt = new Date();
-    const expiresAt = new Date();
-    expiresAt.setDate(startedAt.getDate() + (pkg.validityDays || 30));
-
-    // Create subscription
-    const subResult = await db.insert(subscriptions).values({
-      customerId: customer.id,
-      packageId: pkg.id,
-      username,
-      passwordEncrypted: password, // In production, encrypt this
-      status: "active",
-      startedAt,
-      expiresAt,
-      autoRenew: false,
-    }).returning();
-
-    const subscription = subResult[0];
-
-    // Push to MikroTik (mock mode)
-    if (pkg.type === "pppoe") {
-      mockMikrotikService.createPppoeUser({
-        username,
-        password,
-        profile: pkg.mikrotikProfileName || "default",
-        service: "pppoe",
-        comment: `${customer.fullName} | ${customer.phone}`,
-      });
-    } else if (pkg.type === "hotspot") {
-      mockMikrotikService.createHotspotUser({
-        name: username,
-        password,
-        profile: pkg.mikrotikProfileName || "default",
-        comment: `${customer.fullName} | ${customer.phone}`,
-      });
-    }
-
-    // Update order with subscription ID
-    await db.update(orders).set({ subscriptionId: subscription.id }).where(eq(orders.id, orderId));
-
-    return {
-      success: true,
-      subscriptionId: subscription.id,
-      username,
-      password,
-      message: `Successfully provisioned ${pkg.type} user: ${username}`,
-    };
+    return result;
   } catch (err) {
     console.error("Provisioning error:", err);
     return { success: false, message: err instanceof Error ? err.message : "Provisioning failed" };

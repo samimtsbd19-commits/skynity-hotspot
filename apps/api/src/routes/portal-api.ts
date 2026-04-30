@@ -18,7 +18,7 @@ const createOrderSchema = z.object({
 });
 
 export default async function portalApiRoutes(app: FastifyInstance) {
-  // Get available packages
+  // Get available packages (includes templateConfig for hotspot portal)
   app.get("/packages", async () => {
     const rows = await db.select().from(packages).where(eq(packages.isActive, true));
     return {
@@ -28,10 +28,15 @@ export default async function portalApiRoutes(app: FastifyInstance) {
         type: p.type,
         downloadMbps: p.downloadMbps,
         uploadMbps: p.uploadMbps,
+        burstDownloadMbps: p.burstDownloadMbps,
+        burstUploadMbps: p.burstUploadMbps,
+        burstThresholdMbps: p.burstThresholdMbps,
+        burstTimeSeconds: p.burstTimeSeconds,
         priceBdt: p.priceBdt,
         validityDays: p.validityDays,
         isTrial: p.isTrial,
         description: p.description,
+        templateConfig: p.templateConfig,
       })),
     };
   });
@@ -78,8 +83,6 @@ export default async function portalApiRoutes(app: FastifyInstance) {
     }).returning();
 
     const order = result[0];
-
-    // TODO: Send Telegram notification to admin
 
     return {
       data: {

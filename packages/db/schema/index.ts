@@ -136,6 +136,7 @@ export const packages = pgTable(
     description: text("description"),
     isTrial: boolean("is_trial").default(false),
     isActive: boolean("is_active").default(true),
+    templateConfig: jsonb("template_config").default("{}"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },

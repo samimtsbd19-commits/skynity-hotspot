@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SKYNITY Hotspot</title>
+  <title>SKYNITY WiFi</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,67 +33,65 @@
     </header>
 
     <div class="panels">
-      <div class="login-panel glass">
-        <h2>Sign In</h2>
-        <form name="login" action="$(link-login-only)" method="post">
-          <input type="hidden" name="dst" value="$(link-orig)">
-          <input type="hidden" name="popup" value="true">
-
-          <div class="input-group">
-            <label>Username</label>
-            <input type="text" name="username" placeholder="Enter username" required>
+      <!-- Left: Login + Free Trial -->
+      <div class="left-panel">
+        <!-- WiFi Login -->
+        <div class="login-panel glass">
+          <h2>WiFi Login</h2>
+          <form name="login" action="$(link-login-only)" method="post">
+            <input type="hidden" name="dst" value="$(link-orig)">
+            <input type="hidden" name="popup" value="true">
+            <div class="input-group">
+              <label>Username</label>
+              <input type="text" name="username" placeholder="Enter username" required>
+            </div>
+            <div class="input-group">
+              <label>Password</label>
+              <input type="password" name="password" placeholder="Enter password" required>
+            </div>
+            $(if error)
+            <div class="error">$(error)</div>
+            $(endif)
+            <button type="submit" class="btn-primary">Connect to WiFi</button>
+          </form>
+          <div class="links">
+            <a href="https://user.skynity.org">User Portal</a>
+            <a href="#trial" class="trial-link">Free Trial</a>
           </div>
-          <div class="input-group">
-            <label>Password</label>
-            <input type="password" name="password" placeholder="Enter password" required>
-          </div>
+        </div>
 
-          $(if error)
-          <div class="error">$(error)</div>
-          $(endif)
-
-          <button type="submit" class="btn-primary">Connect</button>
-        </form>
-        <div class="links">
-          <a href="#">Forgot password?</a>
-          <a href="#" class="trial-link">Free Trial</a>
+        <!-- Free Trial Signup -->
+        <div class="trial-panel glass" id="trial">
+          <div class="trial-badge">🎉 FREE 7-DAY TRIAL</div>
+          <h2>Get Started Free</h2>
+          <p class="trial-desc">New users get 7 days free. No payment required!</p>
+          <form id="trial-form">
+            <div class="input-group">
+              <label>Full Name</label>
+              <input type="text" id="trial-name" placeholder="Your name" required>
+            </div>
+            <div class="input-group">
+              <label>Phone Number</label>
+              <input type="tel" id="trial-phone" placeholder="01XXXXXXXXX" pattern="01[3-9][0-9]{8}" required>
+            </div>
+            <div class="input-group">
+              <label>Password</label>
+              <input type="password" id="trial-password" placeholder="Min 6 characters" minlength="6" required>
+            </div>
+            <button type="submit" class="btn-trial" id="trial-btn">
+              <span class="btn-text">Claim Free Trial</span>
+              <span class="btn-spinner" style="display:none;"></span>
+            </button>
+          </form>
+          <div class="trial-note">Already have an account? <a href="https://user.skynity.org/portal/login">Login here</a></div>
         </div>
       </div>
 
+      <!-- Right: Dynamic Packages -->
       <div class="packages-panel">
         <h2>Our Packages</h2>
-        <div class="package-cards">
-          <div class="package-card glass">
-            <div class="speed">10 Mbps</div>
-            <div class="price">৳350</div>
-            <div class="duration">30 Days</div>
-            <ul class="features">
-              <li>Unlimited Data</li>
-              <li>24/7 Support</li>
-            </ul>
-            <button class="btn-outline">Get Started</button>
-          </div>
-          <div class="package-card glass">
-            <div class="speed">20 Mbps</div>
-            <div class="price">৳550</div>
-            <div class="duration">30 Days</div>
-            <ul class="features">
-              <li>Unlimited Data</li>
-              <li>Priority Support</li>
-            </ul>
-            <button class="btn-outline">Get Started</button>
-          </div>
-          <div class="package-card glass">
-            <div class="speed">30 Mbps</div>
-            <div class="price">৳800</div>
-            <div class="duration">30 Days</div>
-            <ul class="features">
-              <li>Unlimited Data</li>
-              <li>Premium Support</li>
-            </ul>
-            <button class="btn-outline">Get Started</button>
-          </div>
-        </div>
+        <div id="package-loader" class="loading">Loading packages...</div>
+        <div class="package-cards" id="package-cards" style="display:none;"></div>
       </div>
     </div>
 
@@ -108,7 +106,29 @@
     </footer>
   </div>
 
+  <!-- Success Modal -->
+  <div id="success-modal" class="modal" style="display:none;">
+    <div class="modal-content glass">
+      <div class="modal-icon">✅</div>
+      <h3>Free Trial Activated!</h3>
+      <p class="modal-sub">Your account is ready. Use these credentials to connect:</p>
+      <div class="cred-box">
+        <div class="cred-row">
+          <span>Username</span>
+          <code id="cred-username">-</code>
+        </div>
+        <div class="cred-row">
+          <span>Password</span>
+          <code id="cred-password">-</code>
+        </div>
+      </div>
+      <p class="modal-hint">You can also login at <a href="https://user.skynity.org">user.skynity.org</a></p>
+      <button class="btn-primary" onclick="closeModal()">Done</button>
+    </div>
+  </div>
+
   <script>
+    // Starfield animation
     const canvas = document.getElementById('stars');
     const ctx = canvas.getContext('2d');
     let w, h, stars = [];
@@ -117,6 +137,128 @@
     function animate() { ctx.clearRect(0, 0, w, h); for (let s of stars) { s.a += 0.005; const f = 0.5 + 0.5 * Math.sin(s.a); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(0, 234, 255, ${f * 0.8})`; ctx.fill(); } requestAnimationFrame(animate); }
     init(); animate();
     window.addEventListener('resize', () => { resize(); init(); });
+
+    // Default template config fallback
+    const defaultTemplate = {
+      primaryColor: "#00EAFF",
+      secondaryColor: "#00FF88",
+      accentColor: "#A855F7",
+      cardStyle: "glass",
+      badgeStyle: "pill",
+      fontFamily: "orbitron"
+    };
+
+    function normalizeTemplate(t) {
+      return { ...defaultTemplate, ...(t || {}) };
+    }
+
+    // Fetch and render packages
+    async function loadPackages() {
+      try {
+        const res = await fetch('https://api.skynity.org/portal-api/packages');
+        const json = await res.json();
+        const list = json.data || [];
+        const loader = document.getElementById('package-loader');
+        const container = document.getElementById('package-cards');
+
+        if (!list.length) {
+          loader.textContent = 'No packages available.';
+          return;
+        }
+
+        loader.style.display = 'none';
+        container.style.display = 'grid';
+
+        container.innerHTML = list.map(pkg => {
+          const t = normalizeTemplate(pkg.templateConfig);
+          const isTrial = pkg.isTrial;
+          const cardClass = t.cardStyle === 'glass' ? 'glass' : t.cardStyle === 'solid' ? 'solid-card' : 'outline-card';
+          const btnClass = t.badgeStyle === 'pill' ? 'pill' : t.badgeStyle === 'square' ? 'square' : 'rounded';
+          const fontFamily = t.fontFamily === 'orbitron' ? "font-family:'Orbitron',sans-serif" : "font-family:'Inter',sans-serif";
+
+          return `
+            <div class="package-card ${cardClass} ${isTrial ? 'trial-highlight' : ''}" style="${fontFamily}">
+              ${isTrial ? '<div class="trial-glow-badge">FREE TRIAL</div>' : ''}
+              <span class="type-badge" style="background:${t.primaryColor}22;color:${t.primaryColor}">${pkg.type.toUpperCase()}</span>
+              <div class="speed" style="color:${t.primaryColor}">${pkg.downloadMbps} Mbps</div>
+              <div class="price" style="color:${t.primaryColor}">৳${pkg.priceBdt}</div>
+              <div class="duration" style="color:${t.secondaryColor}">${pkg.validityDays} Days</div>
+              <ul class="features">
+                <li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> ${pkg.uploadMbps} Mbps Upload</li>
+                <li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> Unlimited Data</li>
+                ${pkg.burstDownloadMbps ? `<li style="color:${t.secondaryColor}"><span style="color:${t.accentColor}">✓</span> Burst ${pkg.burstDownloadMbps} Mbps</li>` : ''}
+              </ul>
+              <a href="https://user.skynity.org/portal/login" class="get-started ${btnClass}" style="background:${t.primaryColor};color:#050B15">
+                ${isTrial ? 'Claim Free' : 'Get Started'}
+              </a>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        document.getElementById('package-loader').textContent = 'Unable to load packages.';
+        console.error(e);
+      }
+    }
+    loadPackages();
+
+    // Free trial form
+    document.getElementById('trial-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('trial-btn');
+      const btnText = btn.querySelector('.btn-text');
+      const spinner = btn.querySelector('.btn-spinner');
+
+      const name = document.getElementById('trial-name').value.trim();
+      const phone = document.getElementById('trial-phone').value.trim();
+      const password = document.getElementById('trial-password').value;
+
+      if (!/^01[3-9]\d{8}$/.test(phone)) {
+        alert('Please enter a valid Bangladesh phone number (01XXXXXXXXX)');
+        return;
+      }
+
+      btn.disabled = true;
+      btnText.style.display = 'none';
+      spinner.style.display = 'inline-block';
+
+      try {
+        const res = await fetch('https://api.skynity.org/portal-auth/free-trial', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName: name, phone, password })
+        });
+        const json = await res.json();
+
+        if (!res.ok) {
+          alert(json.error?.message || 'Something went wrong. Please try again.');
+          return;
+        }
+
+        const data = json.data;
+        document.getElementById('cred-username').textContent = data.subscription.username;
+        document.getElementById('cred-password').textContent = data.subscription.password;
+        document.getElementById('success-modal').style.display = 'flex';
+
+        // Clear form
+        document.getElementById('trial-form').reset();
+      } catch (err) {
+        alert('Network error. Please try again.');
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        spinner.style.display = 'none';
+      }
+    });
+
+    function closeModal() {
+      document.getElementById('success-modal').style.display = 'none';
+    }
+
+    // Close modal on outside click
+    document.getElementById('success-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'success-modal') closeModal();
+    });
   </script>
 </body>
 </html>

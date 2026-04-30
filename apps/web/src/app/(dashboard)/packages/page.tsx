@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import api from "@/lib/api";
-import { Package, ArrowDown, ArrowUp } from "lucide-react";
+import { Package, ArrowDown, ArrowUp, Palette, Edit3 } from "lucide-react";
 import { formatBdt } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface PackageItem {
   id: string;
@@ -16,10 +17,18 @@ interface PackageItem {
   validityDays: number;
   isTrial: boolean;
   isActive: boolean;
+  templateConfig: unknown;
+}
+
+function getTemplateColor(config: unknown): string {
+  if (!config || typeof config !== "object") return "#7AA3C8";
+  const c = config as Record<string, string>;
+  return c.primaryColor || "#7AA3C8";
 }
 
 export default function PackagesPage() {
   const [pkgs, setPkgs] = useState<PackageItem[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchData() {
@@ -71,6 +80,18 @@ export default function PackagesPage() {
                 {p.isActive ? "Active" : "Inactive"}
               </span>
               <span className="text-[10px] uppercase text-sky-text-secondary bg-[#112240] px-2 py-0.5 rounded">{p.type}</span>
+              <div
+                className="w-3 h-3 rounded-full ml-auto"
+                style={{ background: getTemplateColor(p.templateConfig) }}
+                title="Template primary color"
+              />
+              <button
+                onClick={() => router.push(`/templates?pkg=${p.id}`)}
+                className="text-[10px] flex items-center gap-1 text-sky-accent-primary hover:text-sky-accent-green transition-colors"
+              >
+                <Palette size={10} />
+                <Edit3 size={10} />
+              </button>
             </div>
           </div>
         ))}

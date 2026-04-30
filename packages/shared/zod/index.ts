@@ -33,6 +33,7 @@ export const createPackageSchema = z.object({
   mikrotikProfileName: z.string().optional(),
   description: z.string().optional(),
   isTrial: z.boolean().default(false),
+  templateConfig: z.string().optional().or(z.record(z.any())).optional(),
 });
 
 export const createOrderSchema = z.object({
