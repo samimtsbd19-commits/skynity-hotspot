@@ -3,7 +3,8 @@ import { Pool } from "pg";
 import { eq } from "drizzle-orm";
 import { customers, packages, orders, subscriptions } from "@skynity/db/schema/index";
 import { buildDatabaseUrl } from "../../config/env";
-import { mockMikrotikService } from "../mikrotik/client";
+import { getMikrotikClient, mockMikrotikService } from "../mikrotik/client";
+import { env } from "../../config/env";
 
 const pool = new Pool({ connectionString: buildDatabaseUrl() });
 const db = drizzle(pool);
@@ -14,6 +15,18 @@ export interface ProvisioningResult {
   username?: string;
   password?: string;
   message: string;
+}
+
+function getMikrotik() {
+  if (env.MIKROTIK_MOCK === "true") {
+    return { type: "mock" as const, client: mockMikrotikService };
+  }
+  try {
+    const client = getMikrotikClient();
+    return { type: "real" as const, client };
+  } catch {
+    return { type: "mock" as const, client: mockMikrotikService };
+  }
 }
 
 export async function provisionCustomer(
@@ -55,21 +68,46 @@ export async function provisionCustomer(
     const subscription = subResult[0];
 
     if (!opts?.skipMikrotik) {
-      if (pkg.type === "pppoe") {
-        mockMikrotikService.createPppoeUser({
-          username,
-          password,
-          profile: pkg.mikrotikProfileName || "default",
-          service: "pppoe",
-          comment: `${customer.fullName} | ${customer.phone}`,
-        });
-      } else if (pkg.type === "hotspot") {
-        mockMikrotikService.createHotspotUser({
-          name: username,
-          password,
-          profile: pkg.mikrotikProfileName || "default",
-          comment: `${customer.fullName} | ${customer.phone}`,
-        });
+      const mikro = getMikrotik();
+      try {
+        if (pkg.type === "pppoe") {
+          if (mikro.type === "real") {
+            await mikro.client.put("/ppp/secret", {
+              name: username,
+              password,
+              profile: pkg.mikrotikProfileName || "default",
+              service: "pppoe",
+              comment: `${customer.fullName} | ${customer.phone}`,
+              disabled: "false",
+            });
+          } else {
+            mikro.client.createPppoeUser({
+              username, password,
+              profile: pkg.mikrotikProfileName || "default",
+              service: "pppoe",
+              comment: `${customer.fullName} | ${customer.phone}`,
+            });
+          }
+        } else if (pkg.type === "hotspot") {
+          if (mikro.type === "real") {
+            await mikro.client.put("/ip/hotspot/user", {
+              name: username,
+              password,
+              profile: pkg.mikrotikProfileName || "default",
+              comment: `${customer.fullName} | ${customer.phone}`,
+              disabled: "false",
+            });
+          } else {
+            mikro.client.createHotspotUser({
+              name: username, password,
+              profile: pkg.mikrotikProfileName || "default",
+              comment: `${customer.fullName} | ${customer.phone}`,
+            });
+          }
+        }
+      } catch (mtErr) {
+        console.error("MikroTik provisioning warning:", mtErr);
+        // Don't fail the whole operation if MikroTik push fails — the DB subscription is already created
       }
     }
 
