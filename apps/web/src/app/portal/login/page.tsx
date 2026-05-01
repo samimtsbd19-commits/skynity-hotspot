@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { Wifi, LogIn, UserPlus } from "lucide-react";
+import SkynityLogo from "@/components/brand/SkynityLogo";
+import { LogIn, UserPlus, Wifi, ChevronLeft } from "lucide-react";
 
 export default function PortalLoginPage() {
   const router = useRouter();
@@ -17,6 +18,17 @@ export default function PortalLoginPage() {
     confirmPassword: "",
     address: "",
   });
+
+  useEffect(() => {
+    // Add portal manifest for PWA
+    const existing = document.querySelector('link[href="/portal/manifest.json"]');
+    if (!existing) {
+      const link = document.createElement("link");
+      link.rel = "manifest";
+      link.href = "/portal/manifest.json";
+      document.head.appendChild(link);
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,13 +65,25 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <div className="glass-card p-8">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <Wifi size={28} className="text-sky-accent-primary" />
-          <h1 className="font-orbitron text-xl font-bold text-sky-text-primary">
-            {isRegister ? "Create Account" : "Customer Login"}
+    <div className="max-w-md mx-auto mt-6 md:mt-10">
+      <button
+        onClick={() => router.push("/portal/packages")}
+        className="flex items-center gap-1 text-xs text-sky-text-secondary hover:text-sky-accent-primary transition-colors mb-4"
+      >
+        <ChevronLeft size={14} /> Back to packages
+      </button>
+
+      <div className="glass-card p-6 md:p-8">
+        <div className="text-center space-y-3 mb-6">
+          <div className="flex justify-center">
+            <SkynityLogo size={56} />
+          </div>
+          <h1 className="font-orbitron text-xl font-bold text-gradient">
+            SKYNITY
           </h1>
+          <p className="text-xs text-sky-text-secondary">
+            {isRegister ? "Create your account to get started" : "Login to manage your connection"}
+          </p>
         </div>
 
         {error && (

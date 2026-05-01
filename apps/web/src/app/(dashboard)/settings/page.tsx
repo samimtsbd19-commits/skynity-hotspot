@@ -75,7 +75,7 @@ export default function SettingsPage() {
       setSaved(key);
       setTimeout(() => setSaved(null), 1500);
     } catch (e) {
-      console.error(e);
+      // handle error
     } finally {
       setSaving(null);
     }
@@ -95,7 +95,7 @@ export default function SettingsPage() {
       setSaved(`pay-${payment.id}`);
       setTimeout(() => setSaved(null), 1500);
     } catch (e) {
-      console.error(e);
+      // handle error
     } finally {
       setSaving(null);
     }
@@ -112,7 +112,7 @@ export default function SettingsPage() {
       setSaved("pay-new");
       setTimeout(() => setSaved(null), 1500);
     } catch (e) {
-      console.error(e);
+      // handle error
     } finally {
       setSaving(null);
     }
@@ -124,7 +124,7 @@ export default function SettingsPage() {
       await api.delete(`/settings/payments/${id}`);
       setPayments((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
-      console.error(e);
+      // handle error
     }
   }
 

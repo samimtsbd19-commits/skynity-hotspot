@@ -112,15 +112,15 @@ export default function DashboardPage() {
         <StatCard
           icon={Router}
           label="Router Status"
-          value="Online"
-          subtext="Uptime: 3d 4h 22m"
+          value={resource ? "Online" : "Unknown"}
+          subtext={resource ? `CPU: ${resource.cpuLoad}%` : "Loading..."}
           color="green"
         />
         <StatCard
           icon={AlertTriangle}
           label="Expiring Soon"
-          value="7"
-          subtext="Users expire in 7 days"
+          value={pppoe?.users?.length?.toString() ?? "—"}
+          subtext="Active PPPoE users"
           color="orange"
         />
       </div>

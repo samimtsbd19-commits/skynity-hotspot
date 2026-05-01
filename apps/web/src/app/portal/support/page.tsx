@@ -1,11 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Send, MessageCircle, Phone, MapPin, Clock, AlertTriangle, CheckCircle, Mail } from "lucide-react";
+import api from "@/lib/api";
 
 export default function SupportPage() {
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await api.get("/portal-api/settings");
+        const data = res.data.data || {};
+        setSettings(data);
+      } catch {
+        // ignore
+      }
+      setLoading(false);
+    }
+    fetchSettings();
+  }, []);
 
   const handleSubmit = () => {
     if (!message.trim()) return;
@@ -13,6 +30,9 @@ export default function SupportPage() {
     setMessage("");
     setTimeout(() => setSent(false), 3000);
   };
+
+  const phone = settings.support_phone || settings.company_phone || "";
+  const email = settings.support_email || settings.company_email || "";
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -24,14 +44,14 @@ export default function SupportPage() {
           <Phone size={18} className="text-sky-accent-primary" />
           <div>
             <p className="text-xs text-sky-text-secondary">Hotline</p>
-            <p className="text-sm font-bold text-sky-text-primary">01712-345-678</p>
+            <p className="text-sm font-bold text-sky-text-primary">{phone || "Contact admin"}</p>
           </div>
         </div>
         <div className="glass-card p-4 flex items-center gap-3">
           <Mail size={18} className="text-sky-accent-primary" />
           <div>
             <p className="text-xs text-sky-text-secondary">Email</p>
-            <p className="text-sm font-bold text-sky-text-primary">support@skynity.net</p>
+            <p className="text-sm font-bold text-sky-text-primary">{email || "support@skynity.net"}</p>
           </div>
         </div>
         <div className="glass-card p-4 flex items-center gap-3">
@@ -45,7 +65,7 @@ export default function SupportPage() {
           <MapPin size={18} className="text-sky-accent-orange" />
           <div>
             <p className="text-xs text-sky-text-secondary">Location</p>
-            <p className="text-sm font-bold text-sky-text-primary">Dhaka, Bangladesh</p>
+            <p className="text-sm font-bold text-sky-text-primary">{settings.company_address || "Bangladesh"}</p>
           </div>
         </div>
       </div>

@@ -16,12 +16,12 @@ export function useSocket() {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("[Socket] Connected:", socket.id);
+      // Socket connected
       socket.emit("join-room", "dashboard");
     });
 
     socket.on("disconnect", () => {
-      console.log("[Socket] Disconnected");
+      // Socket disconnected
     });
 
     return () => {

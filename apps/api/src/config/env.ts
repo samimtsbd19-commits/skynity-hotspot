@@ -16,7 +16,7 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRES: z.string().default("15m"),
   JWT_REFRESH_EXPIRES: z.string().default("30d"),
   ENCRYPTION_KEY: z.string().min(32).default("skynity-encryption-key-change-me-32b"),
-  MIKROTIK_MOCK: z.string().default("true"),
+  MIKROTIK_MOCK: z.string().default("false"),
   MIKROTIK_DEFAULT_API_PORT: z.string().default("8729"),
   MIKROTIK_API_TIMEOUT_MS: z.string().default("5000"),
   TELEGRAM_BOT_TOKEN: z.string().optional(),

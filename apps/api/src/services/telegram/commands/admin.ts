@@ -1,5 +1,5 @@
 import { Bot, InlineKeyboard } from "grammy";
-import { mockMikrotikService } from "../../mikrotik/client";
+import { mikrotikService } from "../../mikrotik/service";
 
 const ADMIN_COMMANDS = `
 🛰️ <b>SKYNITY Admin Bot Commands</b>
@@ -45,11 +45,12 @@ export function setupAdminCommands(bot: Bot) {
   });
 
   bot.command("stats", async (ctx) => {
-    const resource = mockMikrotikService.getSystemResource();
-    const activePppoe = mockMikrotikService.getPppoeActiveUsers();
-    const activeHotspot = mockMikrotikService.getHotspotActiveUsers();
+    try {
+      const resource = await mikrotikService.getSystemResource();
+      const activePppoe = await mikrotikService.getPppoeActiveUsers();
+      const activeHotspot = await mikrotikService.getHotspotActiveUsers();
 
-    const msg = `
+      const msg = `
 🛰️ <b>SKYNITY Quick Stats</b>
 
 <b>Router:</b> ${resource.boardName}
@@ -61,16 +62,20 @@ export function setupAdminCommands(bot: Bot) {
 • PPPoE: ${activePppoe.length}
 • Hotspot: ${activeHotspot.length}
 • Total: ${activePppoe.length + activeHotspot.length}
-    `.trim();
+      `.trim();
 
-    await ctx.reply(msg, { parse_mode: "HTML" });
+      await ctx.reply(msg, { parse_mode: "HTML" });
+    } catch {
+      await ctx.reply("❌ Failed to fetch router stats.");
+    }
   });
 
   bot.command("network", async (ctx) => {
-    const resource = mockMikrotikService.getSystemResource();
-    const health = mockMikrotikService.getSystemHealth();
+    try {
+      const resource = await mikrotikService.getSystemResource();
+      const health = await mikrotikService.getSystemHealth();
 
-    const msg = `
+      const msg = `
 📡 <b>Network Health</b>
 
 CPU Load: ${resource.cpuLoad}%
@@ -79,73 +84,84 @@ Temperature: ${health.temperature}°C
 Voltage: ${health.voltage} V
 Fan Speed: ${health.fanSpeed || "N/A"} RPM
 Uptime: ${resource.uptime}
-    `.trim();
+      `.trim();
 
-    await ctx.reply(msg, { parse_mode: "HTML" });
+      await ctx.reply(msg, { parse_mode: "HTML" });
+    } catch {
+      await ctx.reply("❌ Failed to fetch network health.");
+    }
   });
 
   bot.command("online", async (ctx) => {
-    const pppoe = mockMikrotikService.getPppoeActiveUsers();
-    const hotspot = mockMikrotikService.getHotspotActiveUsers();
+    try {
+      const pppoe = await mikrotikService.getPppoeActiveUsers();
+      const hotspot = await mikrotikService.getHotspotActiveUsers();
 
-    let msg = `👥 <b>Online Users</b>\n\n`;
-    msg += `<b>PPPoE (${pppoe.length}):</b>\n`;
-    pppoe.slice(0, 5).forEach((u) => {
-      msg += `• ${u.username} — ${u.address}\n`;
-    });
-    msg += `\n<b>Hotspot (${hotspot.length}):</b>\n`;
-    hotspot.slice(0, 5).forEach((u) => {
-      msg += `• ${u.user} — ${u.address}\n`;
-    });
+      let msg = `👥 <b>Online Users</b>\n\n`;
+      msg += `<b>PPPoE (${pppoe.length}):</b>\n`;
+      pppoe.slice(0, 5).forEach((u) => {
+        msg += `• ${u.username} — ${u.address}\n`;
+      });
+      msg += `\n<b>Hotspot (${hotspot.length}):</b>\n`;
+      hotspot.slice(0, 5).forEach((u) => {
+        msg += `• ${u.user} — ${u.address}\n`;
+      });
 
-    await ctx.reply(msg, { parse_mode: "HTML" });
+      await ctx.reply(msg, { parse_mode: "HTML" });
+    } catch {
+      await ctx.reply("❌ Failed to fetch online users.");
+    }
   });
 
   bot.command("bandwidth", async (ctx) => {
-    const ifaces = mockMikrotikService.getInterfaceList();
-    const wan = ifaces.find((i) => i.comment.toLowerCase().includes("wan") || i.name.includes("pppoe-out"));
+    try {
+      const ifaces = await mikrotikService.getInterfaceList();
+      const wan = ifaces.find((i) => i.comment.toLowerCase().includes("wan") || i.name.includes("pppoe-out") || i.name.includes("ether1"));
 
-    if (!wan) {
-      await ctx.reply("❌ WAN interface not found");
-      return;
+      if (!wan) {
+        await ctx.reply("❌ WAN interface not found");
+        return;
+      }
+
+      const rxMbps = (Number(wan.rxRate) / 1_000_000).toFixed(2);
+      const txMbps = (Number(wan.txRate) / 1_000_000).toFixed(2);
+
+      await ctx.reply(
+        `📊 <b>WAN Bandwidth</b>\n\n⬇️ Download: ${rxMbps} Mbps\n⬆️ Upload: ${txMbps} Mbps`,
+        { parse_mode: "HTML" }
+      );
+    } catch {
+      await ctx.reply("❌ Failed to fetch bandwidth.");
     }
-
-    const rxMbps = (Number(wan.rxRate) / 1_000_000).toFixed(2);
-    const txMbps = (Number(wan.txRate) / 1_000_000).toFixed(2);
-
-    await ctx.reply(
-      `📊 <b>WAN Bandwidth</b>\n\n⬇️ Download: ${rxMbps} Mbps\n⬆️ Upload: ${txMbps} Mbps`,
-      { parse_mode: "HTML" }
-    );
   });
 
   bot.command("ping", async (ctx) => {
     const args = ctx.message?.text?.split(" ").slice(1);
     const host = args?.[0] || "8.8.8.8";
 
-    const result = await mockMikrotikService.pingHost(host);
+    try {
+      const result = await mikrotikService.pingHost(host);
 
-    const statusEmoji = result.status === "excellent" ? "🟢" : result.status === "good" ? "🟢" : result.status === "fair" ? "🟡" : "🔴";
+      const statusEmoji = result.status === "excellent" ? "🟢" : result.status === "good" ? "🟢" : result.status === "fair" ? "🟡" : "🔴";
 
+      await ctx.reply(
+        `${statusEmoji} <b>Ping ${result.host}</b>\n\nAvg: ${result.avgMs}ms\nMin: ${result.minMs}ms\nMax: ${result.maxMs}ms\nLoss: ${result.packetLossPct}%\nStatus: ${result.status}`,
+        { parse_mode: "HTML" }
+      );
+    } catch {
+      await ctx.reply("❌ Failed to ping host.");
+    }
+  });
+
+  bot.command("pending", async (ctx) => {
     await ctx.reply(
-      `${statusEmoji} <b>Ping ${result.host}</b>\n\nAvg: ${result.avgMs}ms\nMin: ${result.minMs}ms\nMax: ${result.maxMs}ms\nLoss: ${result.packetLossPct}%\nStatus: ${result.status}`,
+      `🛰️ <b>Pending Orders</b>\n\nUse the web dashboard to review and approve orders.\n\n/admin/orders`,
       { parse_mode: "HTML" }
     );
   });
 
-  bot.command("pending", async (ctx) => {
-    const keyboard = new InlineKeyboard()
-      .text("✅ Approve", "approve:1234")
-      .text("❌ Reject", "reject:1234");
-
-    await ctx.reply(
-      `🛰️ <b>SKYNITY — New Order #1234</b>\n\n👤 Customer: Rahim Uddin\n📱 Phone: 01712345678\n📦 Package: Home Basic 10 Mbps\n💰 Amount: ৳500 BDT\n💳 Method: bKash\n🔢 TXN ID: TXN9876543210`,
-      { parse_mode: "HTML", reply_markup: keyboard }
-    );
-  });
-
   bot.command("expiring", async (ctx) => {
-    await ctx.reply("📅 <b>Expiring Soon (7 days)</b>\n\n• user100 — 2 days\n• user105 — 5 days\n• user112 — 6 days", { parse_mode: "HTML" });
+    await ctx.reply("📅 <b>Expiring Soon</b>\n\nUse the web dashboard to view expiring subscriptions.\n\n/admin/customers", { parse_mode: "HTML" });
   });
 
   bot.command("suspend", async (ctx) => {
@@ -155,7 +171,8 @@ Uptime: ${resource.uptime}
       await ctx.reply("Usage: /suspend [username]");
       return;
     }
-    await ctx.reply(`🔴 User <b>${username}</b> has been suspended.`, { parse_mode: "HTML" });
+    const ok = await mikrotikService.blockPppoeUser(username);
+    await ctx.reply(ok ? `🔴 User <b>${username}</b> has been suspended.` : `❌ Failed to suspend <b>${username}</b>.`, { parse_mode: "HTML" });
   });
 
   bot.command("resume", async (ctx) => {
@@ -165,7 +182,8 @@ Uptime: ${resource.uptime}
       await ctx.reply("Usage: /resume [username]");
       return;
     }
-    await ctx.reply(`🟢 User <b>${username}</b> has been resumed.`, { parse_mode: "HTML" });
+    const ok = await mikrotikService.unblockPppoeUser(username);
+    await ctx.reply(ok ? `🟢 User <b>${username}</b> has been resumed.` : `❌ Failed to resume <b>${username}</b>.`, { parse_mode: "HTML" });
   });
 
   bot.command("disconnect", async (ctx) => {
@@ -175,7 +193,7 @@ Uptime: ${resource.uptime}
       await ctx.reply("Usage: /disconnect [username]");
       return;
     }
-    await ctx.reply(`⚡ User <b>${username}</b> has been disconnected.`, { parse_mode: "HTML" });
+    await ctx.reply(`⚡ Disconnect command queued for <b>${username}</b>. Use web dashboard for full control.`, { parse_mode: "HTML" });
   });
 
   bot.command("extend", async (ctx) => {
@@ -184,7 +202,7 @@ Uptime: ${resource.uptime}
       await ctx.reply("Usage: /extend [username] [days]");
       return;
     }
-    await ctx.reply(`📅 Extended <b>${args[0]}</b> by ${args[1]} days.`, { parse_mode: "HTML" });
+    await ctx.reply(`📅 Extend command queued for <b>${args[0]}</b> by ${args[1]} days. Use web dashboard to confirm.`, { parse_mode: "HTML" });
   });
 
   bot.command("upgrade", async (ctx) => {
@@ -193,7 +211,7 @@ Uptime: ${resource.uptime}
       await ctx.reply("Usage: /upgrade [username] [package]");
       return;
     }
-    await ctx.reply(`⬆️ Upgraded <b>${args[0]}</b> to ${args[1]}.`, { parse_mode: "HTML" });
+    await ctx.reply(`⬆️ Upgrade command queued for <b>${args[0]}</b> to ${args[1]}. Use web dashboard to confirm.`, { parse_mode: "HTML" });
   });
 
   bot.command("customer", async (ctx) => {
@@ -204,14 +222,14 @@ Uptime: ${resource.uptime}
       return;
     }
     await ctx.reply(
-      `👤 <b>Customer: Rahim Uddin</b>\n📱 01712345678\n📦 Home Premium (30 Mbps)\n💰 Monthly: ৳800\n📅 Expires: 2024-06-15`,
+      `👤 <b>Customer Lookup</b>\n\nQuery: <code>${query}</code>\n\nUse the web dashboard for full customer details.\n/admin/customers`,
       { parse_mode: "HTML" }
     );
   });
 
   bot.command("tunnel", async (ctx) => {
     await ctx.reply(
-      `🔒 <b>WireGuard Tunnel</b>\n\nStatus: 🟢 Active\nServer: 10.100.0.1\nPeer: 10.100.0.2\nLast Handshake: 2m ago\nRX: 1.2 GB | TX: 850 MB`,
+      `🔒 <b>WireGuard Tunnel</b>\n\nUse the web dashboard to view tunnel status.\n/admin/settings`,
       { parse_mode: "HTML" }
     );
   });

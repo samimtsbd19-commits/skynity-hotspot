@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { eq, desc } from "drizzle-orm";
-import { customers, packages, orders, subscriptions, appSettings } from "@skynity/db/schema/index";
+import { customers, packages, orders, subscriptions, appSettings, paymentConfigs } from "@skynity/db/schema/index";
 import { buildDatabaseUrl } from "../config/env";
 import { z } from "zod";
 
@@ -15,6 +15,7 @@ const createOrderSchema = z.object({
   trxId: z.string().min(4),
   paymentFrom: z.string().min(11),
   amountBdt: z.string(),
+  password: z.string().min(6).optional(),
 });
 
 export default async function portalApiRoutes(app: FastifyInstance) {
@@ -80,6 +81,7 @@ export default async function portalApiRoutes(app: FastifyInstance) {
       trxId: body.trxId,
       paymentFrom: body.paymentFrom,
       status: "pending",
+      reviewNote: body.password || null,
     }).returning();
 
     const order = result[0];
@@ -112,5 +114,17 @@ export default async function portalApiRoutes(app: FastifyInstance) {
       return acc;
     }, {} as Record<string, unknown>);
     return { data: settings };
+  });
+
+  // Get public payment configs
+  app.get("/payments", async () => {
+    const rows = await db.select().from(paymentConfigs).where(eq(paymentConfigs.isActive, true));
+    return {
+      data: rows.map((p) => ({
+        method: p.method,
+        accountNumber: p.accountNumber,
+        accountType: p.accountType,
+      })),
+    };
   });
 }

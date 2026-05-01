@@ -339,14 +339,28 @@ export const mikrotikService = {
     }
   },
 
-  blockPppoeUser(username: string): boolean {
+  async blockPppoeUser(username: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.blockPppoeUser(username);
-    return true; // TODO: implement via real client
+    const client = getRealClient();
+    if (!client) return false;
+    try {
+      await client.post("/ppp/secret/set", { name: username, disabled: "yes" });
+      return true;
+    } catch {
+      return false;
+    }
   },
 
-  unblockPppoeUser(username: string): boolean {
+  async unblockPppoeUser(username: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.unblockPppoeUser(username);
-    return true; // TODO: implement via real client
+    const client = getRealClient();
+    if (!client) return false;
+    try {
+      await client.post("/ppp/secret/set", { name: username, disabled: "no" });
+      return true;
+    } catch {
+      return false;
+    }
   },
 
   async getHotspotUsers(): Promise<HotspotUser[]> {
@@ -424,14 +438,28 @@ export const mikrotikService = {
     }
   },
 
-  blockHotspotUser(id: string): boolean {
+  async blockHotspotUser(id: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.blockHotspotUser(id);
-    return true; // TODO
+    const client = getRealClient();
+    if (!client) return false;
+    try {
+      await client.post("/ip/hotspot/user/set", { ".id": id, disabled: "yes" });
+      return true;
+    } catch {
+      return false;
+    }
   },
 
-  unblockHotspotUser(id: string): boolean {
+  async unblockHotspotUser(id: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.unblockHotspotUser(id);
-    return true; // TODO
+    const client = getRealClient();
+    if (!client) return false;
+    try {
+      await client.post("/ip/hotspot/user/set", { ".id": id, disabled: "no" });
+      return true;
+    } catch {
+      return false;
+    }
   },
 
   async getLiveStats() {

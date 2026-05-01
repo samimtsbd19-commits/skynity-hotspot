@@ -1,59 +1,54 @@
 import { FastifyInstance } from "fastify";
-import { env } from "../config/env";
-import { mockMikrotikService } from "../services/mikrotik/client";
+import { mikrotikService } from "../services/mikrotik/service";
 
 export default async function hotspotRoutes(app: FastifyInstance) {
   app.get("/users", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getHotspotUsers() };
-    }
-    return { data: [] };
+    const users = await mikrotikService.getHotspotUsers();
+    return { data: users };
   });
 
   app.get("/active", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getHotspotActiveUsers() };
-    }
-    return { data: [] };
+    const users = await mikrotikService.getHotspotActiveUsers();
+    return { data: users };
   });
 
   app.get("/profiles", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getHotspotProfiles() };
-    }
-    return { data: [] };
+    const profiles = await mikrotikService.getHotspotProfiles();
+    return { data: profiles };
   });
 
   // Block / Unblock Hotspot user
   app.post("/users/:id/block", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { durationMinutes } = request.body as { durationMinutes?: number };
-    
-    if (env.MIKROTIK_MOCK === "true") {
-      mockMikrotikService.blockHotspotUser(id);
-      if (durationMinutes) {
-        setTimeout(() => {
-          mockMikrotikService.unblockHotspotUser(id);
-        }, durationMinutes * 60 * 1000);
-      }
-      return { data: { message: `Hotspot user ${id} blocked${durationMinutes ? ` for ${durationMinutes} minutes` : ""}` } };
+
+    const ok = await mikrotikService.blockHotspotUser(id);
+    if (!ok) {
+      return reply.status(500).send({ error: { code: "BLOCK_FAILED", message: "Failed to block hotspot user" } });
     }
-    return reply.status(501).send({ error: { code: "NOT_IMPLEMENTED", message: "Real MikroTik block not yet implemented" } });
+
+    if (durationMinutes) {
+      setTimeout(() => {
+        mikrotikService.unblockHotspotUser(id).catch(() => {});
+      }, durationMinutes * 60 * 1000);
+    }
+
+    return { data: { message: `Hotspot user ${id} blocked${durationMinutes ? ` for ${durationMinutes} minutes` : ""}` } };
   });
 
-  app.post("/users/:id/unblock", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request) => {
+  app.post("/users/:id/unblock", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    if (env.MIKROTIK_MOCK === "true") {
-      mockMikrotikService.unblockHotspotUser(id);
-      return { data: { message: `Hotspot user ${id} unblocked` } };
+    const ok = await mikrotikService.unblockHotspotUser(id);
+    if (!ok) {
+      return reply.status(500).send({ error: { code: "UNBLOCK_FAILED", message: "Failed to unblock hotspot user" } });
     }
-    return { data: { message: "User unblocked" } };
+    return { data: { message: `Hotspot user ${id} unblocked` } };
   });
 
   // Disconnect active hotspot session
   app.post("/users/:id/disconnect", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request) => {
     const { id } = request.params as { id: string };
-    mockMikrotikService.disconnectHotspotUser(id);
+    mikrotikService.disconnectHotspotUser(id);
     return { data: { message: `Hotspot user ${id} disconnected` } };
   });
 }

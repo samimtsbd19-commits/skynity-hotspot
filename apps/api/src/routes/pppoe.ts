@@ -1,38 +1,31 @@
 import { FastifyInstance } from "fastify";
-import { env } from "../config/env";
-import { mockMikrotikService } from "../services/mikrotik/client";
+import { mikrotikService } from "../services/mikrotik/service";
 
 export default async function pppoeRoutes(app: FastifyInstance) {
   app.get("/users", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getPppoeUsers() };
-    }
-    return { data: [] };
+    const users = await mikrotikService.getPppoeUsers();
+    return { data: users };
   });
 
   app.get("/active", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getPppoeActiveUsers() };
-    }
-    return { data: [] };
+    const users = await mikrotikService.getPppoeActiveUsers();
+    return { data: users };
   });
 
   app.get("/profiles", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      return { data: mockMikrotikService.getPppoeProfiles() };
-    }
-    return { data: [] };
+    const profiles = await mikrotikService.getPppoeProfiles();
+    return { data: profiles };
   });
 
   app.post("/users", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin")] }, async (request) => {
     const body = request.body as Record<string, unknown>;
-    mockMikrotikService.createPppoeUser(body);
+    mikrotikService.createPppoeUser(body);
     return { data: { message: "User created" } };
   });
 
   app.delete("/users/:username", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin")] }, async (request) => {
     const { username } = request.params as { username: string };
-    mockMikrotikService.deletePppoeUser(username);
+    mikrotikService.deletePppoeUser(username);
     return { data: { message: "User deleted" } };
   });
 
@@ -40,32 +33,34 @@ export default async function pppoeRoutes(app: FastifyInstance) {
   app.post("/users/:username/block", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request, reply) => {
     const { username } = request.params as { username: string };
     const { durationMinutes } = request.body as { durationMinutes?: number };
-    
-    if (env.MIKROTIK_MOCK === "true") {
-      mockMikrotikService.blockPppoeUser(username);
-      if (durationMinutes) {
-        setTimeout(() => {
-          mockMikrotikService.unblockPppoeUser(username);
-        }, durationMinutes * 60 * 1000);
-      }
-      return { data: { message: `User ${username} blocked${durationMinutes ? ` for ${durationMinutes} minutes` : ""}` } };
+
+    const ok = await mikrotikService.blockPppoeUser(username);
+    if (!ok) {
+      return reply.status(500).send({ error: { code: "BLOCK_FAILED", message: "Failed to block PPPoE user" } });
     }
-    return reply.status(501).send({ error: { code: "NOT_IMPLEMENTED", message: "Real MikroTik block not yet implemented" } });
+
+    if (durationMinutes) {
+      setTimeout(() => {
+        mikrotikService.unblockPppoeUser(username).catch(() => {});
+      }, durationMinutes * 60 * 1000);
+    }
+
+    return { data: { message: `User ${username} blocked${durationMinutes ? ` for ${durationMinutes} minutes` : ""}` } };
   });
 
-  app.post("/users/:username/unblock", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request) => {
+  app.post("/users/:username/unblock", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request, reply) => {
     const { username } = request.params as { username: string };
-    if (env.MIKROTIK_MOCK === "true") {
-      mockMikrotikService.unblockPppoeUser(username);
-      return { data: { message: `User ${username} unblocked` } };
+    const ok = await mikrotikService.unblockPppoeUser(username);
+    if (!ok) {
+      return reply.status(500).send({ error: { code: "UNBLOCK_FAILED", message: "Failed to unblock PPPoE user" } });
     }
-    return { data: { message: "User unblocked" } };
+    return { data: { message: `User ${username} unblocked` } };
   });
 
   // Disconnect active session
   app.post("/users/:username/disconnect", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin", "reseller")] }, async (request) => {
     const { username } = request.params as { username: string };
-    mockMikrotikService.disconnectPppoeUser(username);
+    mikrotikService.disconnectPppoeUser(username);
     return { data: { message: `User ${username} disconnected` } };
   });
 }

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import SkynityLogo from "@/components/brand/SkynityLogo";
-import { LogOut, Package, ListOrdered, Home, BarChart3, HelpCircle, Menu, X, Download } from "lucide-react";
+import { LogOut, Package, ListOrdered, Home, BarChart3, HelpCircle, Menu, X, Download, Gauge, Wifi } from "lucide-react";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
@@ -12,6 +12,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstall, setShowInstall] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -29,7 +30,27 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       setShowInstall(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+
+    const onlineHandler = () => setIsOnline(true);
+    const offlineHandler = () => setIsOnline(false);
+    window.addEventListener("online", onlineHandler);
+    window.addEventListener("offline", offlineHandler);
+    setIsOnline(navigator.onLine);
+
+    // Inject portal manifest for PWA
+    const existing = document.querySelector('link[href="/portal/manifest.json"]');
+    if (!existing) {
+      const link = document.createElement("link");
+      link.rel = "manifest";
+      link.href = "/portal/manifest.json";
+      document.head.appendChild(link);
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("online", onlineHandler);
+      window.removeEventListener("offline", offlineHandler);
+    };
   }, []);
 
   async function installPWA() {
@@ -48,18 +69,28 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     router.push("/portal/login");
   }
 
-  const navLinks = [
+  const allNavLinks = [
     { href: "/portal", icon: Home, label: "Dashboard" },
     { href: "/portal/packages", icon: Package, label: "Packages" },
     { href: "/portal/orders", icon: ListOrdered, label: "Orders" },
     { href: "/portal/usage", icon: BarChart3, label: "Usage" },
-    { href: "/portal/support", icon: HelpCircle, label: "Support" },
+    { href: "/portal/speedtest", icon: Gauge, label: "Speed" },
+    { href: "/portal/guide", icon: HelpCircle, label: "Guide" },
   ];
+
+  const bottomNavLinks = allNavLinks.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-[#050B15] pb-20 md:pb-0">
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 bg-sky-accent-red/90 text-white text-xs text-center py-1.5 z-[60]">
+          You are offline. Some features may not work.
+        </div>
+      )}
+
       {/* Top Nav */}
-      <nav className="border-b border-[rgba(0,234,255,0.15)] bg-[#0A1628]/80 backdrop-blur-md sticky top-0 z-50">
+      <nav className={`border-b border-[rgba(0,234,255,0.15)] bg-[#0A1628]/80 backdrop-blur-md sticky top-0 z-50 ${!isOnline ? "mt-6" : ""}`}>
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/portal" className="flex items-center gap-2">
             <SkynityLogo size={28} />
@@ -68,7 +99,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-4">
-            {token && navLinks.map((link) => (
+            {allNavLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -109,7 +140,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-[rgba(0,234,255,0.1)] bg-[#0A1628]/95 backdrop-blur-md">
             <div className="px-4 py-3 space-y-2">
-              {token && navLinks.map((link) => (
+              {allNavLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -146,7 +177,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       {/* Mobile Bottom Tab Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0A1628]/95 backdrop-blur-md border-t border-[rgba(0,234,255,0.15)] z-50">
         <div className="flex justify-around py-2">
-          {navLinks.slice(0, 5).map((link) => (
+          {bottomNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -160,6 +191,17 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           ))}
         </div>
       </div>
+
+      {/* PWA Install Floating Button (Mobile) */}
+      {showInstall && (
+        <button
+          onClick={installPWA}
+          className="md:hidden fixed bottom-20 right-4 bg-sky-accent-green text-[#050B15] rounded-full p-3 shadow-lg z-50 animate-bounce"
+          title="Install App"
+        >
+          <Download size={20} />
+        </button>
+      )}
     </div>
   );
 }

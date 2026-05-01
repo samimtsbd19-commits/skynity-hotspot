@@ -10,7 +10,7 @@ import {
   RscConfigOptions,
 } from "../services/mikrotik/rsc-generator";
 import { env } from "../config/env";
-import { mockMikrotikService } from "../services/mikrotik/client";
+import { mikrotikService } from "../services/mikrotik/service";
 
 export default async function routerConfigRoutes(app: FastifyInstance) {
   // Generate RSC script
@@ -82,28 +82,28 @@ export default async function routerConfigRoutes(app: FastifyInstance) {
 
   // Get router interface list for config generation
   app.get("/interfaces/:routerId", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
-      const ifaces = mockMikrotikService.getInterfaceList();
-      return { data: ifaces.map((i) => ({ name: i.name, type: i.type, isUp: i.isUp, comment: i.comment })) };
-    }
-    return { data: [] };
+    const ifaces = await mikrotikService.getInterfaceList();
+    return { data: ifaces.map((i) => ({ name: i.name, type: i.type, isUp: i.isUp, comment: i.comment })) };
   });
 
   // Get current router configuration status
   app.get("/status/:routerId", { preHandler: [app.authenticate] }, async () => {
-    if (env.MIKROTIK_MOCK === "true") {
+    try {
+      const resource = await mikrotikService.getSystemResource();
+      const info = await mikrotikService.getDeviceInfo();
       return {
         data: {
           connected: true,
-          identity: "SKYNITY-Core-Router",
-          version: "7.14.3",
-          uptime: "3d 4h 22m",
+          identity: info.identity || "Unknown",
+          version: info.rosVersion || "Unknown",
+          uptime: resource.uptime || "Unknown",
           pppoeServerEnabled: true,
           hotspotEnabled: true,
           radiusConfigured: true,
         },
       };
+    } catch {
+      return { data: { connected: false } };
     }
-    return { data: { connected: false } };
   });
 }

@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { customers, packages, orders, subscriptions } from "@skynity/db/schema/index";
 import { buildDatabaseUrl } from "../../config/env";
 import { getMikrotikClient, mockMikrotikService } from "../mikrotik/client";
@@ -48,7 +48,10 @@ export async function provisionCustomer(
     const pkg = pkgRows[0];
 
     const username = customer.phone.replace(/^\+?88/, "");
-    const password = customer.phone.slice(-6) + "SKY";
+    // Use order-provided password if available, otherwise auto-generate
+    const orderRows = await db.select().from(orders).where(eq(orders.customerId, customerId)).orderBy(desc(orders.createdAt)).limit(1);
+    const orderPassword = orderRows[0]?.reviewNote;
+    const password = orderPassword || customer.phone.slice(-6) + "SKY";
 
     const startedAt = new Date();
     const expiresAt = new Date();

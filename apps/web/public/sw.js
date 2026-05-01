@@ -1,10 +1,20 @@
-const CACHE_NAME = "skynity-v1";
+const CACHE_NAME = "skynity-v2";
 const STATIC_ASSETS = [
   "/",
   "/login",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
+  "/portal",
+  "/portal/login",
+  "/portal/packages",
+  "/portal/orders",
+  "/portal/usage",
+  "/portal/bills",
+  "/portal/support",
+  "/portal/payment",
+  "/portal/guide",
+  "/portal/speedtest",
 ];
 
 self.addEventListener("install", (event) => {
@@ -53,7 +63,7 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => {
           if (request.mode === "navigate") {
-            return caches.match("/");
+            return caches.match("/portal");
           }
           return new Response("Offline", { status: 503 });
         });
@@ -77,6 +87,6 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
-    self.clients.openWindow("/")
+    self.clients.openWindow("/portal")
   );
 });

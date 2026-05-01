@@ -97,7 +97,7 @@ export default function TemplatesPage() {
       const res = await api.get("/packages/");
       setPkgs(res.data.data || []);
     } catch (e) {
-      console.error("Failed to save template", e);
+      // handle error
     } finally {
       setSaving(false);
     }

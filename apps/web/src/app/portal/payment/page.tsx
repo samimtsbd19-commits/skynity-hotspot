@@ -5,12 +5,20 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { ArrowDown, ArrowUp, Clock, Smartphone, Send, CheckCircle, AlertCircle } from "lucide-react";
 
+interface PaymentConfig {
+  method: string;
+  accountNumber: string;
+  accountType: string | null;
+}
+
 export default function PortalPaymentPage() {
   const router = useRouter();
   const [pkg, setPkg] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [payments, setPayments] = useState<PaymentConfig[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [form, setForm] = useState({
     paymentMethod: "bkash" as "bkash" | "nagad",
     trxId: "",
@@ -25,6 +33,17 @@ export default function PortalPaymentPage() {
       return;
     }
     setPkg(JSON.parse(stored));
+
+    async function fetchPayments() {
+      try {
+        const res = await api.get("/portal-api/payments");
+        setPayments(res.data.data || []);
+      } catch {
+        // ignore
+      }
+      setPaymentsLoading(false);
+    }
+    fetchPayments();
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -54,6 +73,7 @@ export default function PortalPaymentPage() {
         trxId: form.trxId,
         paymentFrom: form.paymentFrom,
         amountBdt: pkg.priceBdt,
+        password: form.password,
       });
       setSuccess(res.data.data.message);
       sessionStorage.removeItem("skynity_selected_package");
@@ -63,6 +83,9 @@ export default function PortalPaymentPage() {
     }
     setLoading(false);
   }
+
+  const activePayment = payments.find((p) => p.method === form.paymentMethod);
+  const paymentNumber = activePayment?.accountNumber || "Contact admin for payment number";
 
   if (!pkg) return null;
 
@@ -96,9 +119,12 @@ export default function PortalPaymentPage() {
         <div className="space-y-2 text-xs text-sky-text-secondary">
           <p>1. Open {form.paymentMethod === "bkash" ? "bKash" : "Nagad"} app on your phone</p>
           <p>2. Select <strong>Send Money</strong></p>
-          <p>3. Send <strong>৳{pkg.priceBdt}</strong> to: <strong className="text-sky-text-primary">01XXXXXXXXX</strong></p>
+          <p>3. Send <strong>৳{pkg.priceBdt}</strong> to: <strong className="text-sky-text-primary">{paymentNumber}</strong></p>
           <p>4. Enter the Transaction ID and your number below</p>
         </div>
+        {paymentsLoading && (
+          <p className="text-[10px] text-sky-text-secondary mt-2 animate-pulse">Loading payment details...</p>
+        )}
       </div>
 
       {error && (
