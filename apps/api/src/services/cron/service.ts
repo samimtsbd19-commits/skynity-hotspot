@@ -1,5 +1,6 @@
 import { suspendExpiredSubscriptions } from "../auto-suspend/service";
 import { recordBandwidthSnapshot, recordResourceSnapshot } from "../snapshots/service";
+import { runAlertNotifier } from "../alerts/notifier";
 
 let intervals: NodeJS.Timeout[] = [];
 
@@ -37,9 +38,18 @@ export function startCronJobs(): void {
     }
   }, 5 * 60 * 1000); // 5 minutes
 
-  intervals = [suspendInterval, bandwidthInterval, resourceInterval];
+  // Check and notify alerts every 5 minutes
+  const alertInterval = setInterval(async () => {
+    try {
+      await runAlertNotifier();
+    } catch (err) {
+      console.error("[CRON] Alert notifier failed:", err);
+    }
+  }, 5 * 60 * 1000); // 5 minutes
 
-  console.log("[CRON] Background jobs started: auto-suspend (1h), snapshots (5m)");
+  intervals = [suspendInterval, bandwidthInterval, resourceInterval, alertInterval];
+
+  console.log("[CRON] Background jobs started: auto-suspend (1h), snapshots (5m), alerts (5m)");
 }
 
 export function stopCronJobs(): void {

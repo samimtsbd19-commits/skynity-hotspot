@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import StatCard from "@/components/monitoring/StatCard";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Users, Wifi, TrendingUp, AlertTriangle, Activity, Gauge, Router, Radio, Server, Thermometer, Zap, Clock, HardDrive } from "lucide-react";
 import api from "@/lib/api";
 import { formatBandwidth } from "@/lib/utils";
@@ -50,6 +50,8 @@ export default function DashboardPage() {
   const liveStats = useRealtimeLiveStats();
   const bandwidthData = useRealtimeBandwidth();
   const [bandwidthHistory, setBandwidthHistory] = useState<{ time: string; rx: number; tx: number }[]>([]);
+  const [resourceHistory, setResourceHistory] = useState<any[]>([]);
+  const [historyRange, setHistoryRange] = useState<number>(24);
 
   useEffect(() => {
     async function fetchData() {
@@ -104,6 +106,28 @@ export default function DashboardPage() {
     }
     setAlerts(newAlerts);
   }, [resource, health, interfaces]);
+
+  // Fetch historical resource data
+  useEffect(() => {
+    async function fetchHistory() {
+      try {
+        const res = await api.get(`/monitoring/history/resource?hours=${historyRange}`);
+        const rows = res.data.data || [];
+        const formatted = rows.map((r: any) => ({
+          time: new Date(r.capturedAt).toLocaleTimeString("en-BD", { hour12: false, hour: "2-digit", minute: "2-digit" }),
+          cpu: r.cpuLoadPct ?? null,
+          ram: r.totalMemoryMb && r.freeMemoryMb ? Math.round(((r.totalMemoryMb - r.freeMemoryMb) / r.totalMemoryMb) * 100) : null,
+          temp: r.temperatureC ? Number(r.temperatureC) : null,
+        }));
+        setResourceHistory(formatted);
+      } catch {
+        // ignore
+      }
+    }
+    fetchHistory();
+    const interval = setInterval(fetchHistory, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [historyRange]);
 
   const wan = liveStats?.wan;
   const pppoe = liveStats?.pppoe;
@@ -349,6 +373,90 @@ export default function DashboardPage() {
                 <span className="text-sky-text-primary font-mono">{u.value}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Historical Resource Charts */}
+      <div className="glass-card p-5">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="font-orbitron text-sm font-semibold text-sky-text-primary">Historical Performance</h3>
+          <div className="flex gap-1">
+            {[1, 6, 24, 168].map((h) => {
+              const labels: Record<number, string> = { 1: "1H", 6: "6H", 24: "24H", 168: "7D" };
+              return (
+                <button
+                  key={h}
+                  onClick={() => setHistoryRange(h)}
+                  className={`px-2 py-1 text-[10px] rounded font-mono transition-colors ${
+                    historyRange === h
+                      ? "bg-[#00EAFF] text-[#0A1628]"
+                      : "bg-[#112240] text-sky-text-secondary hover:text-sky-text-primary"
+                  }`}
+                >
+                  {labels[h]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* CPU History */}
+          <div>
+            <h4 className="text-[10px] text-sky-text-secondary mb-2 font-mono">CPU Load (%)</h4>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={resourceHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,234,255,0.1)" />
+                  <XAxis dataKey="time" stroke="#7AA3C8" fontSize={10} tickMargin={5} minTickGap={30} />
+                  <YAxis stroke="#7AA3C8" fontSize={10} domain={[0, 100]} />
+                  <Tooltip
+                    contentStyle={{ background: "#0D1E36", border: "1px solid rgba(0,234,255,0.2)", borderRadius: 8 }}
+                    labelStyle={{ color: "#7AA3C8" }}
+                    formatter={(value: any) => [`${value}%`, "CPU"]}
+                  />
+                  <Line type="monotone" dataKey="cpu" stroke="#00EAFF" strokeWidth={1.5} dot={false} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          {/* RAM History */}
+          <div>
+            <h4 className="text-[10px] text-sky-text-secondary mb-2 font-mono">RAM Usage (%)</h4>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={resourceHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,234,255,0.1)" />
+                  <XAxis dataKey="time" stroke="#7AA3C8" fontSize={10} tickMargin={5} minTickGap={30} />
+                  <YAxis stroke="#7AA3C8" fontSize={10} domain={[0, 100]} />
+                  <Tooltip
+                    contentStyle={{ background: "#0D1E36", border: "1px solid rgba(0,234,255,0.2)", borderRadius: 8 }}
+                    labelStyle={{ color: "#7AA3C8" }}
+                    formatter={(value: any) => [`${value}%`, "RAM"]}
+                  />
+                  <Line type="monotone" dataKey="ram" stroke="#A855F7" strokeWidth={1.5} dot={false} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          {/* Temperature History */}
+          <div>
+            <h4 className="text-[10px] text-sky-text-secondary mb-2 font-mono">Temperature (°C)</h4>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={resourceHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,234,255,0.1)" />
+                  <XAxis dataKey="time" stroke="#7AA3C8" fontSize={10} tickMargin={5} minTickGap={30} />
+                  <YAxis stroke="#7AA3C8" fontSize={10} />
+                  <Tooltip
+                    contentStyle={{ background: "#0D1E36", border: "1px solid rgba(0,234,255,0.2)", borderRadius: 8 }}
+                    labelStyle={{ color: "#7AA3C8" }}
+                    formatter={(value: any) => [`${value}°C`, "Temp"]}
+                  />
+                  <Line type="monotone" dataKey="temp" stroke="#FF6B6B" strokeWidth={1.5} dot={false} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
