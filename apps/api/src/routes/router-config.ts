@@ -11,6 +11,7 @@ import {
 } from "../services/mikrotik/rsc-generator";
 import { env } from "../config/env";
 import { mikrotikService } from "../services/mikrotik/service";
+import { getMikrotikClient } from "../services/mikrotik/client";
 
 export default async function routerConfigRoutes(app: FastifyInstance) {
   // Generate RSC script
@@ -104,6 +105,41 @@ export default async function routerConfigRoutes(app: FastifyInstance) {
       };
     } catch {
       return { data: { connected: false } };
+    }
+  });
+
+  // Update simple queue
+  app.post("/queues/:name", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin")] }, async (request, reply) => {
+    try {
+      const { name } = request.params as { name: string };
+      const body = request.body as { maxLimitUp?: string; maxLimitDown?: string; comment?: string };
+      const client = getMikrotikClient();
+
+      const updates: Record<string, string> = { name };
+      if (body.maxLimitUp && body.maxLimitDown) {
+        updates["max-limit"] = `${body.maxLimitDown}/${body.maxLimitUp}`;
+      }
+      if (body.comment !== undefined) {
+        updates["comment"] = body.comment;
+      }
+
+      await client.post("/queue/simple/set", updates);
+      return { data: { message: `Queue ${name} updated` } };
+    } catch (err: any) {
+      return reply.status(500).send({ error: { code: "QUEUE_UPDATE_FAILED", message: err.message || "Failed to update queue" } });
+    }
+  });
+
+  // Toggle queue enable/disable
+  app.post("/queues/:name/toggle", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin")] }, async (request, reply) => {
+    try {
+      const { name } = request.params as { name: string };
+      const body = request.body as { disabled: boolean };
+      const client = getMikrotikClient();
+      await client.post("/queue/simple/set", { name, disabled: body.disabled ? "yes" : "no" });
+      return { data: { message: `Queue ${name} ${body.disabled ? "disabled" : "enabled"}` } };
+    } catch (err: any) {
+      return reply.status(500).send({ error: { code: "QUEUE_TOGGLE_FAILED", message: err.message || "Failed to toggle queue" } });
     }
   });
 }

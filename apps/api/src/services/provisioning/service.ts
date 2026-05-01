@@ -5,6 +5,12 @@ import { customers, packages, orders, subscriptions } from "@skynity/db/schema/i
 import { buildDatabaseUrl } from "../../config/env";
 import { getMikrotikClient, mockMikrotikService } from "../mikrotik/client";
 import { env } from "../../config/env";
+import {
+  upsertRadcheckUser,
+  upsertRadreplyUser,
+  assignUserGroup,
+  initializeRadiusGroups,
+} from "../radius/service";
 
 const pool = new Pool({ connectionString: buildDatabaseUrl() });
 const db = drizzle(pool);
@@ -29,6 +35,20 @@ function getMikrotik() {
   }
 }
 
+function getRadiusGroupName(downloadMbps: number): string {
+  if (downloadMbps <= 5) return "skynity-5m";
+  if (downloadMbps <= 10) return "skynity-10m";
+  if (downloadMbps <= 20) return "skynity-20m";
+  if (downloadMbps <= 50) return "skynity-50m";
+  return "skynity-100m";
+}
+
+function getRateLimit(downloadMbps: number, uploadMbps: number): string {
+  return `${uploadMbps}M/${downloadMbps}M`;
+}
+
+let radiusGroupsInitialized = false;
+
 export async function provisionCustomer(
   customerId: string,
   packageId: string,
@@ -48,7 +68,6 @@ export async function provisionCustomer(
     const pkg = pkgRows[0];
 
     const username = customer.phone.replace(/^\+?88/, "");
-    // Use order-provided password if available, otherwise auto-generate
     const orderRows = await db.select().from(orders).where(eq(orders.customerId, customerId)).orderBy(desc(orders.createdAt)).limit(1);
     const orderPassword = orderRows[0]?.reviewNote;
     const password = orderPassword || customer.phone.slice(-6) + "SKY";
@@ -70,6 +89,28 @@ export async function provisionCustomer(
 
     const subscription = subResult[0];
 
+    // Initialize RADIUS groups on first provisioning
+    if (!radiusGroupsInitialized) {
+      try {
+        await initializeRadiusGroups();
+        radiusGroupsInitialized = true;
+      } catch (e) {
+        console.error("Failed to initialize RADIUS groups:", e);
+      }
+    }
+
+    // Write to RADIUS tables
+    try {
+      const rateLimit = getRateLimit(pkg.downloadMbps, pkg.uploadMbps);
+      const groupName = pkg.radiusGroupName || getRadiusGroupName(pkg.downloadMbps);
+
+      await upsertRadcheckUser({ username, password });
+      await upsertRadreplyUser({ username, password, rateLimit });
+      await assignUserGroup(username, groupName);
+    } catch (radiusErr) {
+      console.error("RADIUS provisioning warning:", radiusErr);
+    }
+
     if (!opts?.skipMikrotik) {
       const mikro = getMikrotik();
       try {
@@ -78,7 +119,7 @@ export async function provisionCustomer(
             await mikro.client.put("/ppp/secret", {
               name: username,
               password,
-              profile: pkg.mikrotikProfileName || "default",
+              profile: pkg.mikrotikProfileName || "skynity-pppoe",
               service: "pppoe",
               comment: `${customer.fullName} | ${customer.phone}`,
               disabled: "false",
@@ -86,7 +127,7 @@ export async function provisionCustomer(
           } else {
             mikro.client.createPppoeUser({
               username, password,
-              profile: pkg.mikrotikProfileName || "default",
+              profile: pkg.mikrotikProfileName || "skynity-pppoe",
               service: "pppoe",
               comment: `${customer.fullName} | ${customer.phone}`,
             });
@@ -96,21 +137,20 @@ export async function provisionCustomer(
             await mikro.client.put("/ip/hotspot/user", {
               name: username,
               password,
-              profile: pkg.mikrotikProfileName || "default",
+              profile: pkg.mikrotikProfileName || "skynity-hotspot",
               comment: `${customer.fullName} | ${customer.phone}`,
               disabled: "false",
             });
           } else {
             mikro.client.createHotspotUser({
               name: username, password,
-              profile: pkg.mikrotikProfileName || "default",
+              profile: pkg.mikrotikProfileName || "skynity-hotspot",
               comment: `${customer.fullName} | ${customer.phone}`,
             });
           }
         }
       } catch (mtErr) {
         console.error("MikroTik provisioning warning:", mtErr);
-        // Don't fail the whole operation if MikroTik push fails — the DB subscription is already created
       }
     }
 

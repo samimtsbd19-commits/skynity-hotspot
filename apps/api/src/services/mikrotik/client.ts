@@ -75,7 +75,7 @@ export function getMikrotikClient(): MikroTikClient {
     port: Number(env.MIKROTIK_DEFAULT_API_PORT),
     username: process.env.MIKROTIK_USERNAME || "admin",
     password: process.env.MIKROTIK_PASSWORD || "",
-    useSsl: true,
+    useSsl: env.MIKROTIK_USE_SSL !== "false",
   });
 }
 

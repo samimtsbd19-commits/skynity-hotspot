@@ -50,7 +50,7 @@ export const radusergroup = pgTable("radusergroup", {
 });
 
 export const radacct = pgTable("radacct", {
-  radacctid: bigint("radacctid", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  radacctid: serial("radacctid").primaryKey(),
   acctsessionid: varchar("acctsessionid", { length: 64 }).notNull().default(""),
   acctuniqueid: varchar("acctuniqueid", { length: 32 }).notNull().default(""),
   username: varchar("username", { length: 64 }).notNull().default(""),

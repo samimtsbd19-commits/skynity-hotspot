@@ -1,5 +1,11 @@
 import { env } from "../../config/env";
 import { getMikrotikClient, mockMikrotikService } from "./client";
+import { blockRadiusUser, unblockRadiusUser } from "../radius/service";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import { eq } from "drizzle-orm";
+import { subscriptions } from "@skynity/db/schema/index";
+import { buildDatabaseUrl } from "../../config/env";
 import type {
   SystemResource,
   SystemHealth,
@@ -15,6 +21,9 @@ import type {
   HotspotUser,
   ActiveHotspotUser,
 } from "@skynity/shared/types";
+
+const pool = new Pool({ connectionString: buildDatabaseUrl() });
+const db = drizzle(pool);
 
 function getRealClient() {
   try {
@@ -345,18 +354,27 @@ export const mikrotikService = {
     if (!client) return false;
     try {
       await client.post("/ppp/secret/set", { name: username, disabled: "yes" });
+      await blockRadiusUser(username);
       return true;
     } catch {
       return false;
     }
   },
 
-  async unblockPppoeUser(username: string): Promise<boolean> {
+  async unblockPppoeUser(username: string, password?: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.unblockPppoeUser(username);
     const client = getRealClient();
     if (!client) return false;
     try {
       await client.post("/ppp/secret/set", { name: username, disabled: "no" });
+      let pwd = password;
+      if (!pwd) {
+        const rows = await db.select().from(subscriptions).where(eq(subscriptions.username, username)).limit(1);
+        if (rows.length > 0) pwd = rows[0].passwordEncrypted || undefined;
+      }
+      if (pwd) {
+        await unblockRadiusUser(username, pwd);
+      }
       return true;
     } catch {
       return false;
@@ -444,6 +462,10 @@ export const mikrotikService = {
     if (!client) return false;
     try {
       await client.post("/ip/hotspot/user/set", { ".id": id, disabled: "yes" });
+      // Try to get username from id and block in RADIUS too
+      const users = await this.getHotspotUsers();
+      const user = users.find((u) => u.id === id);
+      if (user?.name) await blockRadiusUser(user.name);
       return true;
     } catch {
       return false;
@@ -456,6 +478,13 @@ export const mikrotikService = {
     if (!client) return false;
     try {
       await client.post("/ip/hotspot/user/set", { ".id": id, disabled: "no" });
+      const users = await this.getHotspotUsers();
+      const user = users.find((u) => u.id === id);
+      if (user?.name) {
+        const rows = await db.select().from(subscriptions).where(eq(subscriptions.username, user.name)).limit(1);
+        const pwd = rows[0]?.passwordEncrypted;
+        if (pwd) await unblockRadiusUser(user.name, pwd);
+      }
       return true;
     } catch {
       return false;
