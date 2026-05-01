@@ -54,10 +54,10 @@ export interface NetworkInterface {
   macAddress: string;
   mtu: number;
   isUp: boolean;
-  txBytes: bigint;
-  rxBytes: bigint;
-  txPackets: bigint;
-  rxPackets: bigint;
+  txBytes: number;
+  rxBytes: number;
+  txPackets: number;
+  rxPackets: number;
   txRate: number;
   rxRate: number;
   comment: string;
@@ -76,10 +76,10 @@ export interface SimpleQueue {
   target: string;
   maxLimitUp: string;
   maxLimitDown: string;
-  txBytes: bigint;
-  rxBytes: bigint;
-  txPackets: bigint;
-  rxPackets: bigint;
+  txBytes: number;
+  rxBytes: number;
+  txPackets: number;
+  rxPackets: number;
   txRate: number;
   rxRate: number;
   pcq: string;
@@ -147,8 +147,8 @@ export interface ActivePppoeUser {
   callerId: string;
   service: string;
   uptime: string;
-  txBytes: bigint;
-  rxBytes: bigint;
+  txBytes: number;
+  rxBytes: number;
   txRate?: number;
   rxRate?: number;
 }
@@ -159,8 +159,8 @@ export interface HotspotUser {
   password: string;
   profile: string;
   uptime: string;
-  bytesIn: bigint;
-  bytesOut: bigint;
+  bytesIn: number;
+  bytesOut: number;
   disabled: boolean;
 }
 
@@ -170,8 +170,8 @@ export interface ActiveHotspotUser {
   address: string;
   macAddress: string;
   uptime: string;
-  bytesIn: bigint;
-  bytesOut: bigint;
+  bytesIn: number;
+  bytesOut: number;
   txRate?: number;
   rxRate?: number;
 }

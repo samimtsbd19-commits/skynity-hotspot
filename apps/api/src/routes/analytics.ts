@@ -9,6 +9,19 @@ const pool = new Pool({ connectionString: buildDatabaseUrl() });
 const db = drizzle(pool);
 
 export default async function analyticsRoutes(app: FastifyInstance) {
+  app.get("/", { preHandler: [app.authenticate] }, async () => {
+    const totalCustomers = await db.select({ count: count() }).from(customers);
+    const totalOrders = await db.select({ count: count() }).from(orders);
+    const activeSubs = await db.select({ count: count() }).from(subscriptions).where(eq(subscriptions.status, "active"));
+    return {
+      data: {
+        totalCustomers: totalCustomers[0].count,
+        totalOrders: totalOrders[0].count,
+        activeSubscriptions: activeSubs[0].count,
+      },
+    };
+  });
+
   app.get("/dashboard", { preHandler: [app.authenticate] }, async () => {
     const totalCustomers = await db.select({ count: count() }).from(customers);
     const totalOrders = await db.select({ count: count() }).from(orders);

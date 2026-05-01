@@ -37,11 +37,11 @@ function isMock(): boolean {
   return env.MIKROTIK_MOCK === "true";
 }
 
-function safeBigint(n: unknown): bigint {
-  if (typeof n === "bigint") return n;
-  if (typeof n === "number") return BigInt(Math.floor(n));
-  if (typeof n === "string") return BigInt(n.replace(/[^0-9]/g, "")) || BigInt(0);
-  return BigInt(0);
+function safeBigint(n: unknown): number {
+  if (typeof n === "bigint") return Number(n);
+  if (typeof n === "number") return Math.floor(n);
+  if (typeof n === "string") return Number(n.replace(/[^0-9]/g, "")) || 0;
+  return 0;
 }
 
 function safeNumber(n: unknown): number {

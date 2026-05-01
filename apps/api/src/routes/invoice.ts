@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { eq } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { invoices, customers, orders, packages, appSettings } from "@skynity/db/schema/index";
 import { generateInvoicePDF } from "../services/billing/invoice-pdf";
 import { buildDatabaseUrl } from "../config/env";
@@ -10,6 +10,14 @@ const pool = new Pool({ connectionString: buildDatabaseUrl() });
 const db = drizzle(pool);
 
 export default async function invoiceRoutes(app: FastifyInstance) {
+  app.get("/", { preHandler: [app.authenticate] }, async (request) => {
+    const { page = "1", limit = "20" } = request.query as { page?: string; limit?: string };
+    const offset = (Number(page) - 1) * Number(limit);
+    const data = await db.select().from(invoices).orderBy(desc(invoices.issuedAt)).limit(Number(limit)).offset(offset);
+    const totalRows = await db.select({ count: count() }).from(invoices);
+    return { data, meta: { page: Number(page), limit: Number(limit), total: totalRows[0].count } };
+  });
+
   app.get("/:id/pdf", { preHandler: [app.authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string };
 

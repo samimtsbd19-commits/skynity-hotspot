@@ -10,6 +10,16 @@ const sendSchema = z.object({
 });
 
 export default async function notificationRoutes(app: FastifyInstance) {
+  app.get("/", { preHandler: [app.authenticate] }, async () => {
+    return {
+      data: {
+        channels: ["sms", "telegram", "email"],
+        smsConfigured: !!(process.env.SMS_API_URL && process.env.SMS_API_KEY),
+        telegramConfigured: !!process.env.TELEGRAM_BOT_TOKEN,
+      },
+    };
+  });
+
   app.post("/send", { preHandler: [app.authenticate, app.requireRole("superadmin", "admin")] }, async (request) => {
     const body = sendSchema.parse(request.body);
 
