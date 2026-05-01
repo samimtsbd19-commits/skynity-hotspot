@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS "support_tickets" (
 	"updated_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
-ALTER TABLE "packages" ADD COLUMN "template_config" jsonb DEFAULT '{}';--> statement-breakpoint
+ALTER TABLE "packages" ADD COLUMN IF NOT EXISTS "template_config" jsonb DEFAULT '{}';--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "support_messages" ADD CONSTRAINT "support_messages_ticket_id_support_tickets_id_fk" FOREIGN KEY ("ticket_id") REFERENCES "public"."support_tickets"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
