@@ -8,6 +8,7 @@ import { startBandwidthSocketEmitter } from "./sockets/bandwidth.socket";
 import { startResourceSocketEmitter } from "./sockets/resource.socket";
 import { startPingSocketEmitter } from "./sockets/ping.socket";
 import { startLiveStatsSocketEmitter } from "./sockets/livestats.socket";
+import { startCronJobs, stopCronJobs } from "./services/cron/service";
 
 async function start() {
   const app = await buildApp();
@@ -22,6 +23,10 @@ async function start() {
   startLiveStatsSocketEmitter(app);
   app.log.info("📡 Socket.IO emitters started");
 
+  // Start background cron jobs
+  startCronJobs();
+  app.log.info("⏰ Cron jobs started");
+
   // Start Telegram bot
   const bot = startTelegramBot();
   if (bot) {
@@ -31,6 +36,7 @@ async function start() {
   // Graceful shutdown
   process.on("SIGTERM", async () => {
     app.log.info("SIGTERM received, shutting down gracefully...");
+    stopCronJobs();
     await stopTelegramBot();
     await app.close();
     process.exit(0);

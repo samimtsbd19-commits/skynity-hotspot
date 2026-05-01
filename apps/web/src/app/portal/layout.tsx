@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import SkynityLogo from "@/components/brand/SkynityLogo";
+import LiveChat from "@/components/chat/LiveChat";
 import { LogOut, Package, ListOrdered, Home, BarChart3, HelpCircle, Menu, X, Download, Gauge, Wifi } from "lucide-react";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -202,6 +203,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           <Download size={20} />
         </button>
       )}
+
+      {/* Live Chat Widget */}
+      {token && <LiveChat />}
     </div>
   );
 }

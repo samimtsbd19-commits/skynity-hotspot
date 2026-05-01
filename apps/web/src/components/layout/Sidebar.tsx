@@ -28,6 +28,7 @@ import {
   Map,
   Video,
   X,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +75,7 @@ const navGroups = [
     items: [
       { href: "/router", icon: Server, label: "Routers" },
       { href: "/router/config", icon: Router, label: "Router Config" },
+      { href: "/support", icon: Headphones, label: "Support" },
       { href: "/notifications", icon: Bell, label: "Notifications" },
       { href: "/settings", icon: Settings, label: "Settings" },
     ],

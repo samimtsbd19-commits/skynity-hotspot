@@ -16,6 +16,7 @@ import monitoringPingRoutes from "./routes/monitoring/ping";
 import monitoringSfpRoutes from "./routes/monitoring/sfp";
 import monitoringQueuesRoutes from "./routes/monitoring/queues";
 import monitoringNeighborsRoutes from "./routes/monitoring/neighbors";
+import monitoringHistoryRoutes from "./routes/monitoring/history";
 import pppoeRoutes from "./routes/pppoe";
 import hotspotRoutes from "./routes/hotspot";
 import customerRoutes from "./routes/customers";
@@ -34,6 +35,8 @@ import notificationRoutes from "./routes/notifications";
 import paymentRoutes from "./routes/payment";
 import invoiceRoutes from "./routes/invoice";
 import nmsRoutes from "./routes/nms";
+import supportRoutes from "./routes/support";
+import alertRoutes from "./routes/alerts";
 
 export async function buildApp() {
   const app = fastify({
@@ -91,6 +94,7 @@ export async function buildApp() {
   await app.register(monitoringSfpRoutes, { prefix: "/monitoring/sfp" });
   await app.register(monitoringQueuesRoutes, { prefix: "/monitoring/queues" });
   await app.register(monitoringNeighborsRoutes, { prefix: "/monitoring/neighbors" });
+  await app.register(monitoringHistoryRoutes, { prefix: "/monitoring/history" });
   await app.register(pppoeRoutes, { prefix: "/pppoe" });
   await app.register(hotspotRoutes, { prefix: "/hotspot" });
   await app.register(customerRoutes, { prefix: "/customers" });
@@ -109,6 +113,8 @@ export async function buildApp() {
   await app.register(paymentRoutes, { prefix: "/payment" });
   await app.register(invoiceRoutes, { prefix: "/invoices" });
   await app.register(nmsRoutes, { prefix: "/nms" });
+  await app.register(supportRoutes, { prefix: "/support" });
+  await app.register(alertRoutes, { prefix: "/alerts" });
 
   app.setErrorHandler((error, request, reply) => {
     app.log.error(error);

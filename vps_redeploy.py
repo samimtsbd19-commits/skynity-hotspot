@@ -7,6 +7,10 @@ vps.connect('46.202.166.89', username='root', password="xpHc;haRnLWeIv9'4nN@", t
 
 cmd = """
 cd /opt/skynity
+echo "=== Resetting local changes ==="
+git reset --hard HEAD
+git clean -fd
+
 echo "=== Pulling latest code ==="
 git pull origin main
 
@@ -20,14 +24,12 @@ echo "=== Restarting services ==="
 pm2 restart ecosystem.config.js
 pm2 save
 
-echo "=== Status ==="
+echo "=== Done ==="
 pm2 status
 """
 stdin, stdout, stderr = vps.exec_command(cmd, get_pty=True)
 for line in iter(stdout.readline, ""):
     print(line, end="")
-
-# Also show stderr
 for line in iter(stderr.readline, ""):
     print("ERR:", line, end="")
 

@@ -389,3 +389,41 @@ export const appSettings = pgTable(
   },
   (t) => ({ orgKeyIdx: uniqueIndex("app_settings_org_key_idx").on(t.orgId, t.key) })
 );
+
+// ── 19. support_tickets
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    customerId: uuid("customer_id").references(() => customers.id).notNull(),
+    subject: varchar("subject", { length: 200 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("open"),
+    priority: varchar("priority", { length: 20 }).default("normal"),
+    assignedTo: uuid("assigned_to").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    customerIdx: index("tickets_customer_id_idx").on(t.customerId),
+    statusIdx: index("tickets_status_idx").on(t.status),
+  })
+);
+
+// ── 20. support_messages
+export const supportMessages = pgTable(
+  "support_messages",
+  {
+    id: serial("id").primaryKey(),
+    ticketId: uuid("ticket_id").references(() => supportTickets.id).notNull(),
+    senderType: varchar("sender_type", { length: 20 }).notNull(), // 'customer' | 'admin'
+    senderId: uuid("sender_id").notNull(),
+    message: text("message").notNull(),
+    isRead: boolean("is_read").default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    ticketIdx: index("messages_ticket_id_idx").on(t.ticketId),
+    createdIdx: index("messages_created_at_idx").on(t.createdAt),
+  })
+);
