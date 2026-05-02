@@ -65,6 +65,10 @@ services:
     build:
       context: ../
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.skynity.org}
+        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://admin.skynity.org}
+        NEXT_PUBLIC_USER_PORTAL_URL: ${NEXT_PUBLIC_USER_PORTAL_URL:-https://user.skynity.org/portal}
     restart: unless-stopped
     env_file: ../.env
     ports:
@@ -93,6 +97,8 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-skynity.org}
     ports:
       - "80:80"
       - "443:443"

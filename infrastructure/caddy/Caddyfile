@@ -1,8 +1,19 @@
-dashboard.{$DOMAIN} {
+# Admin Dashboard — admin.skynity.org
+admin.{$DOMAIN} {
   reverse_proxy web:3000
   encode gzip zstd
 }
 
+# User/Customer Portal — user.skynity.org
+user.{$DOMAIN} {
+  @root path /
+  redir @root /portal 302
+
+  reverse_proxy web:3000
+  encode gzip zstd
+}
+
+# API Server — api.skynity.org
 api.{$DOMAIN} {
   reverse_proxy api:3001
   encode gzip zstd
@@ -14,7 +25,9 @@ api.{$DOMAIN} {
   }
 }
 
-hotspot.{$DOMAIN} {
+# Hotspot WiFi Portal — wifi.skynity.org
+wifi.{$DOMAIN} {
   root * /srv/hotspot
   file_server
+  encode gzip zstd
 }

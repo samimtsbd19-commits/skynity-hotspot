@@ -59,8 +59,12 @@ export async function buildApp() {
     },
   });
 
+  const allowedOrigins = [env.APP_URL, env.USER_PORTAL_URL].filter(Boolean) as string[];
   await app.register(cors, {
-    origin: env.APP_URL,
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error("Not allowed by CORS"), false);
+    },
     credentials: true,
   });
 
