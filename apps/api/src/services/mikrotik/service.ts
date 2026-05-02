@@ -25,14 +25,6 @@ import type {
 const pool = new Pool({ connectionString: buildDatabaseUrl() });
 const db = drizzle(pool);
 
-function getRealClient() {
-  try {
-    return getMikrotikClient();
-  } catch {
-    return null;
-  }
-}
-
 function isMock(): boolean {
   return env.MIKROTIK_MOCK === "true";
 }
@@ -50,12 +42,27 @@ function safeNumber(n: unknown): number {
   return 0;
 }
 
+const emptyResource: SystemResource = {
+  cpuLoad: 0, freeMemoryMB: 0, totalMemoryMB: 0, usedMemoryPercent: 0,
+  uptime: "unavailable", uptimeSeconds: 0, boardName: "unavailable",
+  version: "unavailable", architecture: "unavailable", buildTime: "unavailable",
+};
+
+const emptyHealth: SystemHealth = {
+  temperature: 0, voltage: 0, current: 0, powerConsumption: 0, fanSpeed: 0, cpuTemperature: 0,
+};
+
+const emptyDeviceInfo: DeviceInfo = {
+  identity: "unavailable", model: "unavailable", rosVersion: "unavailable",
+  firmwareVersion: "unavailable", serial: "unavailable", licenseLevel: 0,
+  licenseFeatures: [], publicKeyFingerprint: "", ipAddresses: [], macAddresses: [],
+};
+
 export const mikrotikService = {
   async getSystemResource(): Promise<SystemResource> {
     if (isMock()) return mockMikrotikService.getSystemResource();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getSystemResource();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/system/resource") as Record<string, unknown>;
       return {
         cpuLoad: safeNumber(res["cpu-load"]),
@@ -72,15 +79,14 @@ export const mikrotikService = {
         buildTime: String(res["build-time"] || ""),
       };
     } catch {
-      return mockMikrotikService.getSystemResource();
+      return emptyResource;
     }
   },
 
   async getSystemHealth(): Promise<SystemHealth> {
     if (isMock()) return mockMikrotikService.getSystemHealth();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getSystemHealth();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/system/health");
       const data = Array.isArray(res) ? res : [];
       const getVal = (name: string) => {
@@ -96,15 +102,14 @@ export const mikrotikService = {
         cpuTemperature: getVal("cpu-temperature"),
       };
     } catch {
-      return mockMikrotikService.getSystemHealth();
+      return emptyHealth;
     }
   },
 
   async getDeviceInfo(): Promise<DeviceInfo> {
     if (isMock()) return mockMikrotikService.getDeviceInfo();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getDeviceInfo();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/system/routerboard") as Record<string, unknown>;
       return {
         identity: String(res.identity || ""),
@@ -119,15 +124,14 @@ export const mikrotikService = {
         macAddresses: [],
       };
     } catch {
-      return mockMikrotikService.getDeviceInfo();
+      return emptyDeviceInfo;
     }
   },
 
   async getInterfaceList(): Promise<NetworkInterface[]> {
     if (isMock()) return mockMikrotikService.getInterfaceList();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getInterfaceList();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/interface");
       const data = Array.isArray(res) ? res : [res];
       return data.map((iface: any) => ({
@@ -145,14 +149,12 @@ export const mikrotikService = {
         comment: String(iface.comment || ""),
       }));
     } catch {
-      return mockMikrotikService.getInterfaceList();
+      return [];
     }
   },
 
   async getInterfaceTraffic(ifaceName: string): Promise<InterfaceTraffic> {
     if (isMock()) return mockMikrotikService.getInterfaceTraffic(ifaceName);
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getInterfaceTraffic(ifaceName);
     try {
       const list = await this.getInterfaceList();
       const iface = list.find((i) => i.name === ifaceName);
@@ -164,13 +166,12 @@ export const mikrotikService = {
         timestamp: new Date(),
       };
     } catch {
-      return mockMikrotikService.getInterfaceTraffic(ifaceName);
+      return { rxBitsPerSec: 0, txBitsPerSec: 0, rxPacketsPerSec: 0, txPacketsPerSec: 0, timestamp: new Date() };
     }
   },
 
   async pingHost(host: string, count = 4): Promise<PingResult> {
     if (isMock()) return mockMikrotikService.pingHost(host, count);
-    // Use Node.js ping for real routers (MikroTik REST doesn't have reliable synchronous ping)
     try {
       const { promise: pingPromise } = await import("ping");
       const res = await pingPromise.probe(host, { min_reply: count });
@@ -190,15 +191,14 @@ export const mikrotikService = {
         status,
       };
     } catch {
-      return mockMikrotikService.pingHost(host, count);
+      return { host, sentPackets: count, receivedPackets: 0, packetLossPct: 100, minMs: 0, avgMs: 0, maxMs: 0, jitterMs: 0, status: "unreachable" };
     }
   },
 
   async getSimpleQueues(): Promise<SimpleQueue[]> {
     if (isMock()) return mockMikrotikService.getSimpleQueues();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getSimpleQueues();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/queue/simple");
       const data = Array.isArray(res) ? res : [res];
       return data.map((q: any) => ({
@@ -220,15 +220,14 @@ export const mikrotikService = {
         disabled: q.disabled === "true",
       }));
     } catch {
-      return mockMikrotikService.getSimpleQueues();
+      return [];
     }
   },
 
   async getSfpModules(): Promise<SfpModule[]> {
     if (isMock()) return mockMikrotikService.getSfpModules();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getSfpModules();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/interface/ethernet/sfp");
       const data = Array.isArray(res) ? res : [res];
       return data.map((s: any) => ({
@@ -249,15 +248,14 @@ export const mikrotikService = {
         rxPowerStatus: safeNumber(s["sfp-rx-power"]) > -15 ? "ok" : "low",
       }));
     } catch {
-      return mockMikrotikService.getSfpModules();
+      return [];
     }
   },
 
   async getNeighbors(): Promise<Neighbor[]> {
     if (isMock()) return mockMikrotikService.getNeighbors();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getNeighbors();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/ip/neighbor");
       const data = Array.isArray(res) ? res : [res];
       return data.map((n: any) => ({
@@ -272,15 +270,14 @@ export const mikrotikService = {
         discoveryProtocol: (String(n["discovery-protocol"] || "MNDP") as Neighbor["discoveryProtocol"]) || "MNDP",
       }));
     } catch {
-      return mockMikrotikService.getNeighbors();
+      return [];
     }
   },
 
   async getPppoeUsers(): Promise<PppoeUser[]> {
     if (isMock()) return mockMikrotikService.getPppoeUsers();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getPppoeUsers();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/ppp/secret");
       const data = Array.isArray(res) ? res : [res];
       return data.map((u: any) => ({
@@ -291,15 +288,14 @@ export const mikrotikService = {
         comment: String(u.comment || ""),
       }));
     } catch {
-      return mockMikrotikService.getPppoeUsers();
+      return [];
     }
   },
 
   async getPppoeActiveUsers(): Promise<ActivePppoeUser[]> {
     if (isMock()) return mockMikrotikService.getPppoeActiveUsers();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getPppoeActiveUsers();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/ppp/active");
       const data = Array.isArray(res) ? res : [res];
       return data.map((u: any) => ({
@@ -314,12 +310,12 @@ export const mikrotikService = {
         rxRate: safeNumber(u["rx-rate"]),
       }));
     } catch {
-      return mockMikrotikService.getPppoeActiveUsers();
+      return [];
     }
   },
 
-  createPppoeUser(data: unknown): void {
-    if (isMock()) return mockMikrotikService.createPppoeUser(data);
+  createPppoeUser(_data: unknown): void {
+    if (isMock()) return mockMikrotikService.createPppoeUser(_data);
     // Handled in provisioning service via getMikrotikClient directly
   },
 
@@ -337,22 +333,20 @@ export const mikrotikService = {
 
   async getPppoeProfiles(): Promise<string[]> {
     if (isMock()) return mockMikrotikService.getPppoeProfiles();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getPppoeProfiles();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/ppp/profile");
       const data = Array.isArray(res) ? res : [res];
       return data.map((p: any) => String(p.name || "")).filter(Boolean);
     } catch {
-      return mockMikrotikService.getPppoeProfiles();
+      return [];
     }
   },
 
   async blockPppoeUser(username: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.blockPppoeUser(username);
-    const client = getRealClient();
-    if (!client) return false;
     try {
+      const client = getMikrotikClient();
       await client.post("/ppp/secret/set", { name: username, disabled: "yes" });
       await blockRadiusUser(username);
       return true;
@@ -363,9 +357,8 @@ export const mikrotikService = {
 
   async unblockPppoeUser(username: string, password?: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.unblockPppoeUser(username);
-    const client = getRealClient();
-    if (!client) return false;
     try {
+      const client = getMikrotikClient();
       await client.post("/ppp/secret/set", { name: username, disabled: "no" });
       let pwd = password;
       if (!pwd) {
@@ -383,9 +376,8 @@ export const mikrotikService = {
 
   async getHotspotUsers(): Promise<HotspotUser[]> {
     if (isMock()) return mockMikrotikService.getHotspotUsers();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getHotspotUsers();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/ip/hotspot/user");
       const data = Array.isArray(res) ? res : [res];
       return data.map((u: any) => ({
@@ -399,15 +391,14 @@ export const mikrotikService = {
         disabled: u.disabled === "true",
       }));
     } catch {
-      return mockMikrotikService.getHotspotUsers();
+      return [];
     }
   },
 
   async getHotspotActiveUsers(): Promise<ActiveHotspotUser[]> {
     if (isMock()) return mockMikrotikService.getHotspotActiveUsers();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getHotspotActiveUsers();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/ip/hotspot/active");
       const data = Array.isArray(res) ? res : [res];
       return data.map((u: any) => ({
@@ -422,12 +413,12 @@ export const mikrotikService = {
         rxRate: safeNumber(u["rx-rate"]),
       }));
     } catch {
-      return mockMikrotikService.getHotspotActiveUsers();
+      return [];
     }
   },
 
-  createHotspotUser(data: unknown): void {
-    if (isMock()) return mockMikrotikService.createHotspotUser(data);
+  createHotspotUser(_data: unknown): void {
+    if (isMock()) return mockMikrotikService.createHotspotUser(_data);
     // Handled in provisioning service
   },
 
@@ -445,24 +436,21 @@ export const mikrotikService = {
 
   async getHotspotProfiles(): Promise<string[]> {
     if (isMock()) return mockMikrotikService.getHotspotProfiles();
-    const client = getRealClient();
-    if (!client) return mockMikrotikService.getHotspotProfiles();
     try {
+      const client = getMikrotikClient();
       const res = await client.get("/ip/hotspot/user/profile");
       const data = Array.isArray(res) ? res : [res];
       return data.map((p: any) => String(p.name || "")).filter(Boolean);
     } catch {
-      return mockMikrotikService.getHotspotProfiles();
+      return [];
     }
   },
 
   async blockHotspotUser(id: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.blockHotspotUser(id);
-    const client = getRealClient();
-    if (!client) return false;
     try {
+      const client = getMikrotikClient();
       await client.post("/ip/hotspot/user/set", { ".id": id, disabled: "yes" });
-      // Try to get username from id and block in RADIUS too
       const users = await this.getHotspotUsers();
       const user = users.find((u) => u.id === id);
       if (user?.name) await blockRadiusUser(user.name);
@@ -474,9 +462,8 @@ export const mikrotikService = {
 
   async unblockHotspotUser(id: string): Promise<boolean> {
     if (isMock()) return mockMikrotikService.unblockHotspotUser(id);
-    const client = getRealClient();
-    if (!client) return false;
     try {
+      const client = getMikrotikClient();
       await client.post("/ip/hotspot/user/set", { ".id": id, disabled: "no" });
       const users = await this.getHotspotUsers();
       const user = users.find((u) => u.id === id);
