@@ -4,6 +4,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.string().default("3001"),
   APP_URL: z.string().url().default("http://localhost:3000"),
+  USER_PORTAL_URL: z.string().url().optional(),
   DATABASE_URL: z.string().optional(),
   POSTGRES_HOST: z.string().default("localhost"),
   POSTGRES_PORT: z.string().default("5432"),
@@ -17,6 +18,9 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES: z.string().default("30d"),
   ENCRYPTION_KEY: z.string().min(32).default("skynity-encryption-key-change-me-32b"),
   MIKROTIK_MOCK: z.string().default("false"),
+  MIKROTIK_HOST: z.string().default("10.100.0.2"),
+  MIKROTIK_USERNAME: z.string().default("admin"),
+  MIKROTIK_PASSWORD: z.string().default(""),
   MIKROTIK_DEFAULT_API_PORT: z.string().default("80"),
   MIKROTIK_USE_SSL: z.string().default("false"),
   MIKROTIK_API_TIMEOUT_MS: z.string().default("10000"),
@@ -48,6 +52,23 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 
 export const env = envSchema.parse(process.env);
+
+const WEAK_DEFAULTS = [
+  ["JWT_SECRET", "skynity-jwt-secret-change-me-in-production-32b"],
+  ["ENCRYPTION_KEY", "skynity-encryption-key-change-me-32b"],
+  ["RADIUS_SECRET", "radiussecret"],
+  ["BOOTSTRAP_ADMIN_PASSWORD", "admin123"],
+  ["POSTGRES_PASSWORD", "skynity_pass"],
+  ["REDIS_PASSWORD", "redis_pass"],
+] as const;
+
+if (env.NODE_ENV === "production") {
+  const usingDefaults = WEAK_DEFAULTS.filter(([key, def]) => (env as any)[key] === def).map(([key]) => key);
+  if (usingDefaults.length > 0) {
+    console.error(`[SECURITY] Production startup blocked: weak default values detected for: ${usingDefaults.join(", ")}. Update these in your .env file before deploying.`);
+    process.exit(1);
+  }
+}
 
 export const buildDatabaseUrl = (): string => {
   if (env.DATABASE_URL) return env.DATABASE_URL;

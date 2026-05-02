@@ -1,3 +1,5 @@
+import { env } from "../../config/env";
+
 export interface RscConfigOptions {
   wanInterface: string;
   lanInterface: string;
@@ -19,7 +21,7 @@ export const defaultRscConfig: RscConfigOptions = {
   pppoeInterface: "ether2",
   hotspotInterface: "ether3",
   radiusServerIp: "10.100.0.1",
-  radiusSecret: "skynity-radius-secret",
+  radiusSecret: env.RADIUS_SECRET,
   pppoePoolName: "pppoe-pool",
   pppoePoolRange: "192.168.88.10-192.168.88.254",
   hotspotPoolName: "hotspot-pool",

@@ -46,8 +46,12 @@ export default async function analyticsRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get("/revenue", { preHandler: [app.authenticate] }, async (request) => {
-    const days = Number((request.query as any).days || "30");
+  app.get("/revenue", { preHandler: [app.authenticate] }, async (request, reply) => {
+    const raw = Number((request.query as any).days || "30");
+    if (!Number.isInteger(raw) || raw < 1 || raw > 365) {
+      return reply.status(400).send({ error: { code: "INVALID_PARAM", message: "days must be an integer between 1 and 365" } });
+    }
+    const days = raw;
     const result = await db.execute(sql`
       SELECT DATE(created_at) as date, COUNT(*)::int as orders, COALESCE(SUM(amount_bdt), 0)::text as revenue
       FROM orders
@@ -58,8 +62,12 @@ export default async function analyticsRoutes(app: FastifyInstance) {
     return { data: result.rows };
   });
 
-  app.get("/customers/growth", { preHandler: [app.authenticate] }, async (request) => {
-    const days = Number((request.query as any).days || "30");
+  app.get("/customers/growth", { preHandler: [app.authenticate] }, async (request, reply) => {
+    const raw = Number((request.query as any).days || "30");
+    if (!Number.isInteger(raw) || raw < 1 || raw > 365) {
+      return reply.status(400).send({ error: { code: "INVALID_PARAM", message: "days must be an integer between 1 and 365" } });
+    }
+    const days = raw;
     const result = await db.execute(sql`
       SELECT DATE(created_at) as date, COUNT(*)::int as count
       FROM customers

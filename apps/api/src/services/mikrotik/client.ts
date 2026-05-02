@@ -71,10 +71,10 @@ export function getMikrotikClient(): MikroTikClient {
     throw new Error("Mock mode: use mockMikrotikService directly");
   }
   return new MikroTikClient({
-    host: process.env.MIKROTIK_HOST || "10.100.0.2",
+    host: env.MIKROTIK_HOST,
     port: Number(env.MIKROTIK_DEFAULT_API_PORT),
-    username: process.env.MIKROTIK_USERNAME || "admin",
-    password: process.env.MIKROTIK_PASSWORD || "",
+    username: env.MIKROTIK_USERNAME,
+    password: env.MIKROTIK_PASSWORD,
     useSsl: env.MIKROTIK_USE_SSL !== "false",
   });
 }
